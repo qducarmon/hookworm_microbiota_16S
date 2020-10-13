@@ -1,0 +1,403 @@
+---
+title: "OTU_Diversity"
+author: "QD"
+output: html_document
+---
+
+##Alpha diversities
+```{r}
+diversities_rechhi<-estimate_richness(samples_rechhi)
+diversities_rechhi$SampleID<-rownames(diversities_rechhi)
+diversities_rechhi$SampleID<-gsub("X103540.001.","103540-001-",diversities_rechhi$SampleID)
+metadata_rechhi$SampleID<-rownames(metadata_rechhi)
+metad_divers_rechhi<-merge(metadata_rechhi,diversities_rechhi, by = "SampleID")
+```
+##Extra note after first revision. Investigate whether sequencing depth affected diversity measures. As the analyses show below, this was not the case.
+```{r}
+read_sums<-as.data.frame(colSums(samples_rechhi@otu_table@.Data, na.rm = FALSE, dims = 1))
+read_sums$SampleID<-rownames(read_sums)
+read_sums<-plyr::rename(read_sums,c("colSums(samples_rechhi@otu_table@.Data, na.rm = FALSE, dims = 1)"="Read_Number"))
+##Merge sum of the reads with dataframe containing alpha diversities
+metad_divers_readsum<-merge(metad_divers_rechhi,read_sums, by = "SampleID")
+
+ggplot(metad_divers_readsum)+
+  aes(x=Read_Number,y=Shannon)+
+  geom_point()+
+  geom_smooth(method=lm)+
+  stat_cor(method="kendall") ##No significant correlation
+
+ggplot(metad_divers_readsum)+
+  aes(x=Read_Number,y=Chao1)+
+  geom_point()+
+  geom_smooth(method=lm)+
+  stat_cor(method="kendall") ##There is a significant correlation
+
+ggplot(metad_divers_readsum)+
+  aes(x=Complaints,y=Read_Number)+
+  geom_point()+
+  stat_compare_means(method = "t.test")
+
+ggplot(metad_divers_readsum)+
+  aes(x=Complaints,y=Read_Number)+
+  geom_point()+
+  stat_compare_means(method = "t.test") ##Definitely no relation between complaint groups and read number
+
+ggplot(metad_divers_readsum)+
+  aes(x=Group,y=Read_Number)+
+  geom_point()+
+  stat_compare_means(method = "anova") ##Definitely no relation between larval dosage groups and read number
+
+cor(metad_divers_readsum$Shannon,metad_divers_readsum$Read_Number,method="kendall",use="complete.obs")
+cor(metad_divers_readsum$Chao1,metad_divers_readsum$Read_Number,method="kendall",use="complete.obs")
+```
+
+
+##Plot richness in total and per group--> Chao 1. Also project mean per group. This is exploratory only
+```{r}
+Chao1_rechhi_all<-ggplot(metad_divers_rechhi)+
+  aes(x=Timepoint,y=Chao1, color=Group, group=PatientID)+
+  geom_point()+
+  geom_line()
+
+metad_divers_rechhi_groupA<-subset(metad_divers_rechhi,Group=="A")
+ggplot(metad_divers_rechhi_groupA)+
+  aes(x=Timepoint,y=Chao1, color=PatientID, group=PatientID, title="Chao 1 group A")+
+  geom_point()+
+  geom_line()
+
+metad_divers_rechhi_groupB<-subset(metad_divers_rechhi,Group=="B")
+ggplot(metad_divers_rechhi_groupB)+
+  aes(x=Timepoint,y=Chao1, color=PatientID, group=PatientID, title="Chao 1 group B")+
+  geom_point()+
+  geom_line()
+
+metad_divers_rechhi_groupC<-subset(metad_divers_rechhi,Group=="C")
+ggplot(metad_divers_rechhi_groupC)+
+  aes(x=Timepoint,y=Chao1, color=PatientID, group=PatientID, title="Chao 1 group C")+
+  geom_point()+
+  geom_line()
+
+Chao1_rechhi_all+facet_grid(.~Group)
+
+mean_recchi_chao<-as.data.frame(with(metad_divers_rechhi, tapply(Chao1, list(Timepoint, Group),mean, na.rm = TRUE)))
+mean_recchi_chao$Timepoint<-row.names(mean_recchi_chao)
+mean_recchi_chao_long<-melt(mean_recchi_chao,variable.name="Group")
+
+mean_recchi_chao_plot<-ggplot(mean_recchi_chao_long)+
+  aes(x=Timepoint,y=value,group=Group,color=Group)+
+  geom_point()+
+  geom_line()+
+  ylab("Chao_1")
+
+mean_recchi_chao_plot+facet_grid(.~Group)
+```
+##Plot alpha diversity in total and per group --> Shannon diversity
+```{r}
+rechhi_Shannon_all<-ggplot(metad_divers_rechhi)+
+  aes(x=Timepoint,y=Shannon, color=Group, group=PatientID)+
+  geom_point()+
+  geom_line()
+
+metad_divers_rechhi_groupA<-subset(metad_divers_rechhi,Group=="A")
+ggplot(metad_divers_rechhi_groupA)+
+  aes(x=Timepoint,y=Shannon, color=PatientID, group=PatientID, title="Shannon group A")+
+  geom_point()+
+  geom_line()
+
+metad_divers_rechhi_groupB<-subset(metad_divers_rechhi,Group=="B")
+ggplot(metad_divers_rechhi_groupB)+
+  aes(x=Timepoint,y=Shannon, color=PatientID, group=PatientID, title="Shannon group B")+
+  geom_point()+
+  geom_line()
+
+metad_divers_rechhi_groupC<-subset(metad_divers_rechhi,Group=="C")
+ggplot(metad_divers_rechhi_groupC)+
+  aes(x=Timepoint,y=Shannon, color=PatientID, group=PatientID, title="Shannon group C")+
+  geom_point()+
+  geom_line()
+
+rechhi_Shannon_all+facet_grid(.~Group)
+
+mean_recchi_Shannon<-as.data.frame(with(metad_divers_rechhi, tapply(Shannon, list(Timepoint, Group),mean, na.rm = TRUE)))
+mean_recchi_Shannon$Timepoint<-row.names(mean_recchi_Shannon)
+mean_recchi_Shannon_long<-melt(mean_recchi_Shannon,variable.name="Group")
+
+mean_recchi_Shannon_plot<-ggplot(mean_recchi_Shannon_long)+
+  aes(x=Timepoint,y=value,group=Group,color=Group)+
+  geom_point()+
+  geom_line()+
+  ylab("Shannon")
+
+mean_recchi_Shannon_plot+facet_grid(.~Group)
+```
+## After discussing with Jelle Goeman, look for deltas between the groups from week 0 and 4, and only apply a linear-mixed model from week 8-20 (so actually only 1 free time point so to say) 
+```{r}
+##Start analyses for entire group and for larvae groups (A,B,C)
+metad_divers_rechhi$Timepoint<-as.factor(metad_divers_rechhi$Timepoint)
+metad_divers_rechhi$Group<-as.factor(metad_divers_rechhi$Group)
+##clean up data frame a bit to remove the irrelevant columns. Also remove week 8, 14 and 20 as not needed for now
+metad_divers_rechhi_filtered<-subset(metad_divers_rechhi,Timepoint=="week00"|Timepoint=="week04") 
+metad_divers_rechhi_filtered$Timepoint<-drop.levels(metad_divers_rechhi_filtered$Timepoint)
+##Most effective way to make a wide data frame, so no mistakes can be made when computing deltas
+wide_Chao1<-dcast(metad_divers_rechhi_filtered,PatientID+Group~Timepoint,value.var="Chao1")
+wide_Chao1$delt_week00_week04<-wide_Chao1$week04-wide_Chao1$week00
+## Useful code to quickly check means/sd of variables
+group_by(wide_Chao1,Group) %>% 
+  dplyr::summarise(
+    count = n(),
+    mean = mean(delt_week00_week04, na.rm = TRUE),
+    sd = sd(delt_week00_week04, na.rm = TRUE)
+  )
+
+with(wide_Chao1,shapiro.test(delt_week00_week04[Group=="A"]))
+with(wide_Chao1,shapiro.test(delt_week00_week04[Group=="C"])) ## Normally distributed data for both groups, as far as it is possible to test with such a low n
+##Now test equal variance, drop group B. After talking to Jelle Goeman, he mentioned it is more strict to define the statistical test a priori, so we will not assume equal variance for any of the independent t-tests (or other tests where it could be relevant). However, the reviewer preferred in the end to have equal variance tested and adapt the test accordingly if necessary
+wide_Chao1_t_test<-subset(wide_Chao1,Group!="B")
+var.test(delt_week00_week04~Group,wide_Chao1_t_test) ##Variances do not differ.
+res_Chao1<-t.test(delt_week00_week04~Group,var.equal=TRUE,data=wide_Chao1_t_test)
+res_Chao1 ## So no significant treatment effect on Chao1
+##Can also try paired t-test for group C to check for a treatment effect
+Paired_Chao1_C<-subset(wide_Chao1_t_test,Group=="C")
+# Shapiro-Wilk normality test for the differences
+shapiro.test(Paired_Chao1_C$delt_week00_week04) ## Is normal, so can continue
+t.test(Paired_Chao1_C$week00,Paired_Chao1_C$week04,paired=TRUE) ## No significance
+```
+##As all invididuals are expected to have established infection at week eight, do a pair-wise comparison over all individuals for week zero vs eight.
+```{r}
+metad_divers_rechhi_0_8<-subset(metad_divers_rechhi,Timepoint=="week00"|Timepoint=="week08")
+wide_Chao1_0_8<-dcast(metad_divers_rechhi_0_8,PatientID+Group~Timepoint,value.var="Chao1")
+
+shapiro.test(wide_Chao1_0_8$week00)
+shapiro.test(wide_Chao1_0_8$week08)
+## Non-normal distribution for both variables, so need to use Mann-Whitney
+##Now test equal variance
+var.test(wide_Chao1_0_8$week00,wide_Chao1_0_8$week08) ##Variances do not differ, but see previous comment from Jelle regarding this.
+res_Chao1_0_8<-wilcox.test(wide_Chao1_0_8$week00,wide_Chao1_0_8$week08,var.equal=TRUE,paired = TRUE)
+res_Chao1_0_8
+```
+
+##Graph with means+individual plots
+```{r}
+group_means_Chao1<-metad_divers_rechhi %>% group_by(Group,Timepoint) %>% dplyr::summarise(Chao1=mean(Chao1))
+
+ggplot(metad_divers_rechhi)+
+  aes(x=Timepoint,y=Chao1,group=Group,color=Group)+
+  geom_line(aes(group=PatientID))+
+  geom_line(data=group_means_Chao1,size=2)
+```
+##Publication-worthy graph including 95% CI. OTU Chao 1 study groups
+```{r}
+group_means_CI_Chao1<-metad_divers_rechhi %>% group_by(Group,Timepoint) %>% dplyr::summarise(Chao1_mean=mean(Chao1),Chao1_ci=1.96*sd(Chao1)/sqrt(n()))
+group_means_CI_Chao1<-rename(group_means_CI_Chao1,c("Group"="Dosage_Group"))
+
+pd <- position_dodge(width = 0.2)
+Chao1_OTU_study_groups<-ggplot(group_means_CI_Chao1)+
+  aes(x=Timepoint,y=Chao1_mean,group=Dosage_Group,color=Dosage_Group)+
+  geom_line(position=pd)+ ## aes(linetype=Dosage_Group)
+  geom_errorbar(aes(ymin=Chao1_mean-Chao1_ci,ymax=Chao1_mean+Chao1_ci),width=0.1,position=pd)+
+  scale_color_manual(values=c("red", "blue", "green3"))+
+  geom_point(size=3,position=pd)+
+  geom_point(size=2,color="white",position=pd)+
+  ggtitle("Chao1 OTU")+
+  ylim(250,500)+
+  ylab("Chao1")+
+  theme(panel.background = element_rect(fill = "white"),    
+    legend.key=element_rect(fill="white"),          
+    axis.line.x=element_line(colour="black",size=1), 
+    axis.line.y=element_line(colour="black",size=1))
+Chao1_OTU_study_groups
+```
+##Chao 1 for clinical groups, exploratory
+```{r}
+#Quantify how many people per group (A,B,C) are in the complaints group to think whether the drop at week 4 in the heavy group makes any sense.
+metad_divers_rechhi %>% group_by(Complaints,Timepoint) %>% dplyr::summarise(n(),mean=mean(Chao1),sd=sd(Chao1))
+metad_divers_rechhi %>% group_by(Group,Complaints,PatientID) %>% dplyr::summarise(n(),mean=mean(Chao1),sd=sd(Chao1))
+
+group_means_Chao1<-metad_divers_rechhi %>% group_by(Complaints,Timepoint) %>% dplyr::summarise(Chao1=mean(Chao1))
+
+ggplot(metad_divers_rechhi)+
+  aes(x=Timepoint,y=Chao1,group=Complaints,color=Complaints)+
+  geom_line(aes(group=PatientID))+
+  geom_line(data=group_means_Chao1,size=2)
+```
+##Statistical test Chao1. Check if difference is significant at baseline level, week 4 and at week 8.
+```{r}
+metad_divers_rechhi_clinical_deltas<-subset(metad_divers_rechhi,Timepoint=="week00"|Timepoint=="week04") 
+metad_divers_rechhi_clinical_deltas$Timepoint<-drop.levels(metad_divers_rechhi_clinical_deltas$Timepoint)
+##Most effective way to make a wide data frame, so no mistakes can be made when computing deltas
+wide_Chao1<-dcast(metad_divers_rechhi_clinical_deltas,PatientID+Complaints~Timepoint,value.var="Chao1")
+
+with(wide_Chao1,shapiro.test(week00[Complaints=="Light"]))
+with(wide_Chao1,shapiro.test(week00[Complaints=="Heavy"])) ## Both variables normally dsitributed
+var.test(week00~Complaints,wide_Chao1) ##Variances do not differ
+res_Chao1<-t.test(week00~Complaints,var.equal=TRUE,data=wide_Chao1)
+res_Chao1# No significant difference at baseline in chao1 between light and heavy complaints group
+
+#Test week 0 versus 8 for both light and heavy group (paired test) and independent test between the group
+metad_divers_rechhi_clinical_deltas<-subset(metad_divers_rechhi,Timepoint=="week00"|Timepoint=="week08") 
+metad_divers_rechhi_clinical_deltas$Timepoint<-drop.levels(metad_divers_rechhi_clinical_deltas$Timepoint)
+##Most effective way to make a wide data frame, so no mistakes can be made when computing deltas
+wide_Chao1<-dcast(metad_divers_rechhi_clinical_deltas,PatientID+Complaints~Timepoint,value.var="Chao1")
+
+with(wide_Chao1,shapiro.test(week08[Complaints=="Light"]))
+with(wide_Chao1,shapiro.test(week08[Complaints=="Heavy"])) ## Light group not normally distributed, so Mann-Whitney
+var.test(week08~Complaints,wide_Chao1) ##Variances differ, so indicate in Mann-Whitney. L
+res_Chao1<-wilcox.test(week08~Complaints,var.equal=FALSE,data=wide_Chao1)
+res_Chao1 ## No difference between complaints group at week 8.
+
+#Paired test for Light complaints group
+with(wide_Chao1,shapiro.test(week00[Complaints=="Light"]))
+with(wide_Chao1,shapiro.test(week08[Complaints=="Light"])) ##Not normally distributed, so wilcoxon
+wide_Chao1_Light<-subset(wide_Chao1,Complaints=="Light")
+wilcox.test(wide_Chao1$week00,wide_Chao1$week08,paired=TRUE)
+
+#Paired test for Heavy complaints group
+with(wide_Chao1,shapiro.test(week00[Complaints=="Heavy"]))
+with(wide_Chao1,shapiro.test(week08[Complaints=="Heavy"])) ##Normally distributed, so paired t-test
+wide_Chao1_Heavy<-subset(wide_Chao1,Complaints=="Heavy")
+t.test(wide_Chao1$week00,wide_Chao1$week08,paired=TRUE)
+```
+##Longitudinal Chao1 clinical groups. No extra differences, just what was previously observed (week20 has increased chao1 as compared to week08)
+```{r}
+metad_divers_rechhi_clinical_longitudinal<-subset(metad_divers_rechhi,Timepoint=="week08"|Timepoint=="week14"|Timepoint=="week20")
+Chao1_Longitudinal<-lmer(Chao1~Complaints*Timepoint+(1|PatientID),data=metad_divers_rechhi_clinical_longitudinal)
+summary(Chao1_Longitudinal)
+
+##Recode to make sure the heavy does not have significance, indeed not the case.
+levels(metad_divers_rechhi_clinical_longitudinal$Complaints)
+metad_divers_rechhi_clinical_longitudinal$Complaints<-fct_relevel(metad_divers_rechhi_clinical_longitudinal$Complaints,"Heavy","Light")
+metad_divers_rechhi_clinical_longitudinal<-subset(metad_divers_rechhi,Timepoint=="week08"|Timepoint=="week14"|Timepoint=="week20")
+Chao1_Longitudinal<-lmer(Chao1~Complaints*Timepoint+(1|PatientID),data=metad_divers_rechhi_clinical_longitudinal)
+summary(Chao1_Longitudinal)
+```
+##Shannon exploratory
+```{r}
+metad_divers_rechhi %>% group_by(Complaints,Timepoint) %>% dplyr::summarise(n(),mean=mean(Shannon),sd=sd(Shannon))
+group_means_Shannon<-metad_divers_rechhi %>% group_by(Complaints,Timepoint) %>% dplyr::summarise(Shannon=mean(Shannon))
+
+ggplot(metad_divers_rechhi)+
+  aes(x=Timepoint,y=Shannon,group=Complaints,color=Complaints)+
+  geom_line(aes(group=PatientID))+
+  geom_line(data=group_means_Shannon,size=2)
+```
+
+##OTU Chao 1 clinical groups
+```{r}
+group_means_CI_Chao1<-metad_divers_rechhi %>% group_by(Complaints,Timepoint) %>% dplyr::summarise(Chao1_mean=mean(Chao1),Chao1_ci=1.96*sd(Chao1)/sqrt(n()))
+group_means_CI_Chao1<-rename(group_means_CI_Chao1,c("Complaints"="GI_Symptoms"))
+group_means_CI_Chao1$GI_Symptoms<-revalue(group_means_CI_Chao1$GI_Symptoms,c("Light"="Lo","Heavy"="Hi"))
+
+pd <- position_dodge(width = 0.2)
+Chao1_OTU_clinical_groups<-ggplot(group_means_CI_Chao1)+
+  aes(x=Timepoint,y=Chao1_mean,group=GI_Symptoms,color=GI_Symptoms)+
+  geom_line(position=pd)+ # aes(linetype=GI_Symptoms),
+  geom_errorbar(aes(ymin=Chao1_mean-Chao1_ci,ymax=Chao1_mean+Chao1_ci),width=0.1,position=pd)+
+  scale_color_manual(values=c("orange", "blue"))+
+  geom_point(size=3,position=pd)+
+  geom_point(size=2,color="white",position=pd)+
+  ggtitle("Chao1 OTU")+
+  ylim(250,500)+
+  ylab("Chao1")+
+  theme(panel.background = element_rect(fill = "white"),    
+    legend.key=element_rect(fill="white"),          
+    axis.line.x=element_line(colour="black",size=1), 
+    axis.line.y=element_line(colour="black",size=1))
+Chao1_OTU_clinical_groups
+```
+## OTU Shannon study groups
+```{r}
+group_means_CI_Shannon<-metad_divers_rechhi %>% group_by(Group,Timepoint) %>% dplyr::summarise(Shannon_mean=mean(Shannon),Shannon_ci=1.96*sd(Shannon)/sqrt(n()))
+group_means_CI_Shannon<-rename(group_means_CI_Shannon,c("Group"="Dosage_Group"))
+
+pd <- position_dodge(width = 0.2)
+Shannon_OTU_study_groups<-ggplot(group_means_CI_Shannon)+
+  aes(x=Timepoint,y=Shannon_mean,group=Dosage_Group,color=Dosage_Group)+
+  geom_line(position=pd)+ ## aes(linetype=Dosage_Group),
+  geom_errorbar(aes(ymin=Shannon_mean-Shannon_ci,ymax=Shannon_mean+Shannon_ci),width=0.1,position=pd)+
+  scale_color_manual(values=c("red", "blue", "green3"))+
+  geom_point(size=3,position=pd)+
+  geom_point(size=2,color="white",position=pd)+
+  ggtitle("Shannon OTU")+
+  ylim(3.8,5.0)+
+  ylab("Shannon")+
+  theme(panel.background = element_rect(fill = "white"),    
+    legend.key=element_rect(fill="white"),          
+    axis.line.x=element_line(colour="black",size=1), 
+    axis.line.y=element_line(colour="black",size=1))
+Shannon_OTU_study_groups
+```
+##OTU Shannon clinical groups
+```{r}
+group_means_CI_Shannon<-metad_divers_rechhi %>% group_by(Complaints,Timepoint) %>% dplyr::summarise(Shannon_mean=mean(Shannon),Shannon_ci=1.96*sd(Shannon)/sqrt(n()))
+group_means_CI_Shannon<-rename(group_means_CI_Shannon,c("Complaints"="GI_Symptoms"))
+group_means_CI_Shannon$GI_Symptoms<-revalue(group_means_CI_Shannon$GI_Symptoms,c("Light"="Lo","Heavy"="Hi"))
+
+
+pd <- position_dodge(width = 0.2)
+Shannon_OTU_clinical_groups<-ggplot(group_means_CI_Shannon)+
+  aes(x=Timepoint,y=Shannon_mean,group=GI_Symptoms,color=GI_Symptoms)+
+  geom_line(position=pd)+ ## aes(linetype=GI_Symptoms),
+  geom_errorbar(aes(ymin=Shannon_mean-Shannon_ci,ymax=Shannon_mean+Shannon_ci),width=0.1,position=pd)+
+  scale_color_manual(values=c("orange", "blue"))+
+  geom_point(size=3,position=pd)+
+  geom_point(size=2,color="white",position=pd)+
+  ggtitle("Shannon OTU")+
+  ylim(3.8,5.0)+
+  ylab("Shannon")+
+  theme(panel.background = element_rect(fill = "white"),    
+    legend.key=element_rect(fill="white"),          
+    axis.line.x=element_line(colour="black",size=1), 
+    axis.line.y=element_line(colour="black",size=1))
+Shannon_OTU_clinical_groups
+```
+## Four graphs of richness/diversity at OTU level
+```{r}
+ggarrange(Chao1_OTU_study_groups,Chao1_OTU_clinical_groups,Shannon_OTU_study_groups,Shannon_OTU_clinical_groups,labels = c("A", "B", "C","D"),ncol = 2, nrow = 2)
+```
+
+##Longitudinal from week 08-20 for Chao1, need long data frame. As shown from mean evolution, can assume a linear relationship and therefore no quadratic functions/splines or other fancy methods are needed (plus the fact that there are only 3 data points, so would be a big chance for overfitting)
+```{r}
+metad_divers_rechhi_week08_20<-subset(metad_divers_rechhi,Timepoint=="week08"|Timepoint=="week14"|Timepoint=="week20")
+Chao1_Longitudinal<-lmer(Chao1~Group+Timepoint+(1|PatientID),data=metad_divers_rechhi_week08_20) ##Significant difference between week 08 and week 20 over all samples, clear increase at week 20.
+summary(Chao1_Longitudinal)
+Chao1_Longitudinal<-lmer(Chao1~Group*Timepoint+(1|PatientID),data=metad_divers_rechhi_week08_20)
+summary(Chao1_Longitudinal)
+##Check assumptions
+plot(Chao1_Longitudinal) ## No clear
+qqnorm(resid(Chao1_Longitudinal))
+qqline(resid(Chao1_Longitudinal))
+```
+##Deltas/comparison week00 and week04 for Shannon diversity
+```{r}
+wide_Shannon<-dcast(metad_divers_rechhi_filtered,PatientID+Group~Timepoint,value.var="Shannon")
+wide_Shannon$delt_week00_week04<-wide_Shannon$week04-wide_Shannon$week00
+group_by(wide_Shannon,Group) %>% 
+  dplyr::summarise(
+    count = n(),
+    mean = mean(delt_week00_week04, na.rm = TRUE),
+    sd = sd(delt_week00_week04, na.rm = TRUE)
+  )
+with(wide_Shannon,shapiro.test(delt_week00_week04[Group=="A"]))
+with(wide_Shannon,shapiro.test(delt_week00_week04[Group=="C"]))##Normally distributed data for both groups,so continue with variance testing
+wide_Shannon_t_test<-subset(wide_Shannon,Group!="B")
+var.test(delt_week00_week04~Group,var.equal=TRUE,wide_Shannon_t_test) ##Variances do not differ
+res_Shannon<-t.test(delt_week00_week04~Group,var.equal=TRUE,data=wide_Shannon_t_test)
+res_Shannon ## So no significant treatment effect on Chao1
+
+##Can also try paired t-test for group C to check for a treatment effect
+Paired_Shannon_C<-subset(wide_Shannon_t_test,Group=="C")
+# Shapiro-Wilk normality test for the differences
+shapiro.test(Paired_Shannon_C$delt_week00_week04) ## Is normal, so can continue
+t.test(Paired_Shannon_C$week00,Paired_Shannon_C$week04,paired=TRUE) ## No significance
+```
+##Longitudinal from week 08-20 for Shannon, compute similarly as for Chao1 and can use the same data frame
+```{r}
+Shannon_Longitudinal<-lmer(Shannon~Group+Timepoint+(1|PatientID),data=metad_divers_rechhi_week08_20)
+summary(Shannon_Longitudinal)
+qqnorm(resid(Shannon_Longitudinal))
+qqline(resid(Shannon_Longitudinal))
+```
+
+
+
+
