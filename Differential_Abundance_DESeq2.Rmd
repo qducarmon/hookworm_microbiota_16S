@@ -1,0 +1,406 @@
+---
+title: "Differential_Abundance_DESeq2"
+author: "QD"
+output: html_document
+---
+
+##Perform similar differential abundance testing at genus level (hopefully more power as the FDR correction becomes less stringent with less bacteria). Select genera with at least 1 read in 25% of samples
+```{r}
+filter<-genefilter_sample(samples_rechhi_genus,filterfun_sample(function(x) x >=1),A = 0.25*nsamples(samples_rechhi_genus))
+samples_genus_25<-prune_taxa(filter,samples_rechhi_genus)
+samples_genus_25_rel<-microbiome::transform(samples_genus_25,"compositional")
+samples_genus_25_rel_df<-psmelt(samples_genus_25_rel)
+```
+##Longitudinal setup using LRT
+```{r}
+diagdds=phyloseq_to_deseq2(samples_genus_25,~PatientID+Timepoint)  #	to test	for differences	between	timepoints, while controlling for individual 
+diagdds<-DESeqDataSet(diagdds,~PatientID+Timepoint)
+
+diagdds <- DESeq(diagdds, test="LRT", reduced=~PatientID)
+res_dds <- results(diagdds)
+res_dds$symbol <- mcols(res_dds)$symbol
+test1<-as.data.frame(head(res_dds[order(res_dds$padj),], 5)) ##So no bacteria show a time-dependent effect as indicated by non-significant adjusted p-values. Quickly do some pair-wise comparisons as well.
+resultsNames(diagdds)
+res04 <- results(diagdds, name="Timepoint_week04_vs_week00", test="Wald")
+res04[which.min(res_dds$padj),]
+##Basically the conclusion is that there are no significant changes over time over all the individuals as compared to week 0
+```
+
+##Week 0 versus 8 at OTU. Since this study is largely exploratory, see if perhaps some small effects can be found.
+```{r}
+samples_genus_25_wk_0_8<-subset_samples(samples_genus_25,Timepoint=="week00"|Timepoint=="week08")
+
+diagdds=phyloseq_to_deseq2(samples_genus_25_wk_0_8,~PatientID+Timepoint)  #	to test	for differences	between	timepoints, while controlling for individual 
+diagdds$Timepoint<-factor(diagdds$Timepoint, levels=c("week00","week08"))
+
+gm_mean = function(x, na.rm=TRUE){
+  exp(sum(log(x[x > 0]), na.rm=na.rm) / length(x))
+}
+geoMeans = apply(counts(diagdds), 1, gm_mean)
+diagdds = estimateSizeFactors(diagdds, geoMeans = geoMeans)
+diagdds = DESeq(diagdds,fitType="local")
+
+
+resultsNames(diagdds)
+res=results(diagdds, contrast=c("Timepoint","week00","week08"),cooksCutoff = FALSE)
+head(res)
+alpha = 0.1 ## Just to check if any taxa are below adjusted p-value of 0.1.
+sigtab = res[which(res$pvalue<alpha), ]
+sigtab = cbind(as(sigtab, "data.frame"), as(tax_table(samples_genus_25_wk_0_8)[rownames(sigtab), ], "matrix"))
+head(sigtab, 50)
+dim(sigtab)
+res
+
+x = tapply(sigtab$log2FoldChange, sigtab$Rank2, function(x) max(x))
+x = sort(x, TRUE)
+sigtab$phylum = factor(as.character(sigtab$Rank2), levels=names(x))
+# Genus order
+x = tapply(sigtab$log2FoldChange, sigtab$Rank6, function(x) max(x))
+x = sort(x, TRUE)
+sigtab$genus = factor(as.character(sigtab$Rank6), levels=names(x))
+
+ggplot(sigtab)+
+  aes(x=genus, y=log2FoldChange, color=phylum)+ 
+  geom_point(size=5) + 
+  theme(axis.text.x = element_text(angle = -50, hjust = 0, vjust=0.9))+
+  ggtitle("week 00 versus week 08")
+
+##plot most significant OTU (but still just p-value of almost 0.5, so not significant at all), 72342634, just to visualize over all volunteers.
+samples_genus_25_rel_df_72342634<-subset(samples_genus_25_rel_df,OTU=="72342634")
+ggplot(samples_genus_25_rel_df_72342634)+
+  aes(x=Timepoint,y=Abundance,color=PatientID,group=PatientID,shape=Group)+
+  geom_point()+geom_line()
+```
+##Week 0 versus 14
+```{r}
+samples_genus_25_wk_0_14<-subset_samples(samples_genus_25,Timepoint=="week00"|Timepoint=="week14")
+
+diagdds=phyloseq_to_deseq2(samples_genus_25_wk_0_14,~PatientID+Timepoint)  #	to test	for differences	between	timepoints, while controlling for individual 
+diagdds$Timepoint<-factor(diagdds$Timepoint, levels=c("week00","week14"))
+
+gm_mean = function(x, na.rm=TRUE){
+  exp(sum(log(x[x > 0]), na.rm=na.rm) / length(x))
+}
+geoMeans = apply(counts(diagdds), 1, gm_mean)
+diagdds = estimateSizeFactors(diagdds, geoMeans = geoMeans)
+diagdds = DESeq(diagdds,fitType="local")
+
+
+resultsNames(diagdds)
+res=results(diagdds, contrast=c("Timepoint","week00","week14"),cooksCutoff = FALSE)
+head(res)
+alpha = 0.1
+sigtab = res[which(res$pvalue<alpha), ]
+sigtab = cbind(as(sigtab, "data.frame"), as(tax_table(samples_genus_25_wk_0_14)[rownames(sigtab), ], "matrix"))
+head(sigtab, 50)
+dim(sigtab)
+res
+
+
+x = tapply(sigtab$log2FoldChange, sigtab$Rank2, function(x) max(x))
+x = sort(x, TRUE)
+sigtab$phylum = factor(as.character(sigtab$Rank2), levels=names(x))
+# Genus order
+x = tapply(sigtab$log2FoldChange, sigtab$Rank6, function(x) max(x))
+x = sort(x, TRUE)
+sigtab$genus = factor(as.character(sigtab$Rank6), levels=names(x))
+
+ggplot(sigtab)+
+  aes(x=genus, y=log2FoldChange, color=phylum)+ 
+  geom_point(size=5) + 
+  theme(axis.text.x = element_text(angle = -50, hjust = 0, vjust=0.9))+
+  ggtitle("week 00 versus week 14")
+
+##plot only significant OTU, 723426286 (p of 0.04)
+samples_genus_25_rel_df_723426286<-subset(samples_genus_25_rel_df,OTU=="723426286")
+ggplot(samples_genus_25_rel_df_723426286)+
+  aes(x=Timepoint,y=Abundance,color=PatientID,group=PatientID,shape=Group)+
+  geom_point()+geom_line()
+
+```
+##Week 0 versus 20
+```{r}
+samples_genus_25_wk_0_20<-subset_samples(samples_genus_25,Timepoint=="week00"|Timepoint=="week20")
+
+diagdds=phyloseq_to_deseq2(samples_genus_25_wk_0_20,~PatientID+Timepoint)  #	to test	for differences	between	timepoints, while controlling for individual 
+diagdds$Timepoint<-factor(diagdds$Timepoint, levels=c("week00","week20"))
+
+gm_mean = function(x, na.rm=TRUE){
+  exp(sum(log(x[x > 0]), na.rm=na.rm) / length(x))
+}
+geoMeans = apply(counts(diagdds), 1, gm_mean)
+diagdds = estimateSizeFactors(diagdds, geoMeans = geoMeans)
+diagdds = DESeq(diagdds,fitType="local")
+
+
+resultsNames(diagdds)
+res=results(diagdds, contrast=c("Timepoint","week00","week20"),cooksCutoff = FALSE)
+head(res)
+alpha = 0.1
+sigtab = res[which(res$pvalue<alpha), ]
+sigtab = cbind(as(sigtab, "data.frame"), as(tax_table(samples_genus_25_wk_0_20)[rownames(sigtab), ], "matrix"))
+head(sigtab, 50)
+dim(sigtab)
+res
+
+
+x = tapply(sigtab$log2FoldChange, sigtab$Rank2, function(x) max(x))
+x = sort(x, TRUE)
+sigtab$phylum = factor(as.character(sigtab$Rank2), levels=names(x))
+# Genus order
+x = tapply(sigtab$log2FoldChange, sigtab$Rank6, function(x) max(x))
+x = sort(x, TRUE)
+sigtab$genus = factor(as.character(sigtab$Rank6), levels=names(x))
+
+ggplot(sigtab)+
+  aes(x=genus, y=log2FoldChange, color=phylum)+ 
+  geom_point(size=5) + 
+  theme(axis.text.x = element_text(angle = -50, hjust = 0, vjust=0.9))+
+  ggtitle("week 00 versus week 20")
+
+##plot most significant OTU (just p of 0.3), 723426118
+samples_genus_25_rel_df_723426118<-subset(samples_genus_25_rel_df,OTU=="723426118")
+ggplot(samples_genus_25_rel_df_723426118)+
+  aes(x=Timepoint,y=Abundance,color=PatientID,group=PatientID,shape=Group)+
+  geom_point()+geom_line()
+```
+##week 08 versus 20, as compared that with longitudinal model as well
+```{r}
+samples_genus_25_wk_8_20<-subset_samples(samples_genus_25,Timepoint=="week08"|Timepoint=="week20")
+
+diagdds=phyloseq_to_deseq2(samples_genus_25_wk_8_20,~PatientID+Timepoint)  #	to test	for differences	between	timepoints, while controlling for individual 
+diagdds$Timepoint<-factor(diagdds$Timepoint, levels=c("week08","week20"))
+
+gm_mean = function(x, na.rm=TRUE){
+  exp(sum(log(x[x > 0]), na.rm=na.rm) / length(x))
+}
+geoMeans = apply(counts(diagdds), 1, gm_mean)
+diagdds = estimateSizeFactors(diagdds, geoMeans = geoMeans)
+diagdds = DESeq(diagdds,fitType="local")
+
+
+resultsNames(diagdds)
+res=results(diagdds, contrast=c("Timepoint","week08","week20"),cooksCutoff = FALSE)
+head(res)
+alpha = 0.1
+sigtab = res[which(res$pvalue<alpha), ]
+sigtab = cbind(as(sigtab, "data.frame"), as(tax_table(samples_genus_25_wk_8_20)[rownames(sigtab), ], "matrix"))
+head(sigtab, 50)
+dim(sigtab)
+res
+
+
+x = tapply(sigtab$log2FoldChange, sigtab$Rank2, function(x) max(x))
+x = sort(x, TRUE)
+sigtab$phylum = factor(as.character(sigtab$Rank2), levels=names(x))
+# Genus order
+x = tapply(sigtab$log2FoldChange, sigtab$Rank6, function(x) max(x))
+x = sort(x, TRUE)
+sigtab$genus = factor(as.character(sigtab$Rank6), levels=names(x))
+
+ggplot(sigtab)+
+  aes(x=genus, y=log2FoldChange, color=phylum)+ 
+  geom_point(size=5) + 
+  theme(axis.text.x = element_text(angle = -50, hjust = 0, vjust=0.9))+
+  ggtitle("week 08 versus week 20")
+```
+
+##The conclusion of all these tests is simply that there are no consistent hookworm-induced effects for specific genera over all volunteers.
+
+##Test at OTU level. Also filter for 1 read in at least 25% of samples
+```{r}
+filter<-genefilter_sample(samples_rechhi,filterfun_sample(function(x) x >=1),A = 0.25*nsamples(samples_rechhi))
+samples_25<-prune_taxa(filter,samples_rechhi)
+samples_25_rel<-microbiome::transform(samples_25,"compositional")
+samples_25_rel_df<-psmelt(samples_25_rel)
+```
+##Longitudinal setup using LRT
+```{r}
+diagdds=phyloseq_to_deseq2(samples_25,~PatientID+Timepoint)  #	to test	for differences	between	timepoints, while controlling for individual 
+diagdds<-DESeqDataSet(diagdds,~PatientID+Timepoint)
+
+diagdds <- DESeq(diagdds, test="LRT", reduced=~PatientID)
+res_dds <- results(diagdds)
+res_dds$symbol <- mcols(res_dds)$symbol
+test1<-as.data.frame(head(res_dds[order(res_dds$padj),], 5)) ##So no OTUs show a time-dependent effect as indicated by non-significant adjusted p-values. Quickly do some pair-wise comparisons as well.
+resultsNames(diagdds)
+res04 <- results(diagdds, name="Timepoint_week04_vs_week00", test="Wald")
+res04[which.min(res_dds$padj),]
+##Basically the conclusion is that there are no significant changes over time over all the individuals as compared to week 0
+```
+
+
+##Week 0 versus 8 at OTU. Since this study is largely exploratory, see if perhaps some small effects can be found.
+```{r}
+samples_25_wk_0_8<-subset_samples(samples_25,Timepoint=="week00"|Timepoint=="week08")
+
+diagdds=phyloseq_to_deseq2(samples_25_wk_0_8,~PatientID+Timepoint)  #	to test	for differences	between	timepoints, while controlling for individual 
+diagdds$Timepoint<-factor(diagdds$Timepoint, levels=c("week00","week08"))
+
+gm_mean = function(x, na.rm=TRUE){
+  exp(sum(log(x[x > 0]), na.rm=na.rm) / length(x))
+}
+geoMeans = apply(counts(diagdds), 1, gm_mean)
+diagdds = estimateSizeFactors(diagdds, geoMeans = geoMeans)
+diagdds = DESeq(diagdds,fitType="local")
+
+
+resultsNames(diagdds)
+res=results(diagdds, contrast=c("Timepoint","week00","week08"),cooksCutoff = FALSE)
+head(res)
+alpha = 0.1 ## Just to check if any taxa are below adjusted p-value of 0.1.
+sigtab = res[which(res$pvalue<alpha), ]
+sigtab = cbind(as(sigtab, "data.frame"), as(tax_table(samples_25_wk_0_8)[rownames(sigtab), ], "matrix"))
+head(sigtab, 50)
+dim(sigtab)
+res
+
+x = tapply(sigtab$log2FoldChange, sigtab$Rank2, function(x) max(x))
+x = sort(x, TRUE)
+sigtab$phylum = factor(as.character(sigtab$Rank2), levels=names(x))
+# Genus order
+x = tapply(sigtab$log2FoldChange, sigtab$Rank6, function(x) max(x))
+x = sort(x, TRUE)
+sigtab$genus = factor(as.character(sigtab$Rank6), levels=names(x))
+
+ggplot(sigtab)+
+  aes(x=genus, y=log2FoldChange, color=phylum)+ 
+  geom_point(size=5) + 
+  theme(axis.text.x = element_text(angle = -50, hjust = 0, vjust=0.9))+
+  ggtitle("week 00 versus week 08")
+
+##plot most significant OTU (but still just p-value of 0.15, so not significant at all), 72342664, just to visualize over all volunteers.
+samples_25_rel_df_72342664<-subset(samples_25_rel_df,OTU=="72342664")
+ggplot(samples_25_rel_df_72342664)+
+  aes(x=Timepoint,y=Abundance,color=PatientID,group=PatientID,shape=Group)+
+  geom_point()+geom_line()
+```
+##Week 0 versus 14
+```{r}
+samples_25_wk_0_14<-subset_samples(samples_25,Timepoint=="week00"|Timepoint=="week14")
+
+diagdds=phyloseq_to_deseq2(samples_25_wk_0_14,~PatientID+Timepoint)  #	to test	for differences	between	timepoints, while controlling for individual 
+diagdds$Timepoint<-factor(diagdds$Timepoint, levels=c("week00","week14"))
+
+gm_mean = function(x, na.rm=TRUE){
+  exp(sum(log(x[x > 0]), na.rm=na.rm) / length(x))
+}
+geoMeans = apply(counts(diagdds), 1, gm_mean)
+diagdds = estimateSizeFactors(diagdds, geoMeans = geoMeans)
+diagdds = DESeq(diagdds,fitType="local")
+
+
+resultsNames(diagdds)
+res=results(diagdds, contrast=c("Timepoint","week00","week14"),cooksCutoff = FALSE)
+head(res)
+alpha = 0.1
+sigtab = res[which(res$pvalue<alpha), ]
+sigtab = cbind(as(sigtab, "data.frame"), as(tax_table(samples_25_wk_0_14)[rownames(sigtab), ], "matrix"))
+head(sigtab, 50)
+dim(sigtab)
+res
+
+
+x = tapply(sigtab$log2FoldChange, sigtab$Rank2, function(x) max(x))
+x = sort(x, TRUE)
+sigtab$phylum = factor(as.character(sigtab$Rank2), levels=names(x))
+# Genus order
+x = tapply(sigtab$log2FoldChange, sigtab$Rank6, function(x) max(x))
+x = sort(x, TRUE)
+sigtab$genus = factor(as.character(sigtab$Rank6), levels=names(x))
+
+ggplot(sigtab)+
+  aes(x=genus, y=log2FoldChange, color=phylum)+ 
+  geom_point(size=5) + 
+  theme(axis.text.x = element_text(angle = -50, hjust = 0, vjust=0.9))+
+  ggtitle("week 00 versus week 14")
+
+##plot most significant OTU, 723426286, Faecalibacterium (p of 0.13)
+samples_25_rel_df_7234263128<-subset(samples_25_rel_df,OTU=="7234263128")
+ggplot(samples_25_rel_df_7234263128)+
+  aes(x=Timepoint,y=Abundance,color=PatientID,group=PatientID,shape=Group)+
+  geom_point()+geom_line()
+
+```
+##Week 0 versus 20
+```{r}
+samples_25_wk_0_20<-subset_samples(samples_25,Timepoint=="week00"|Timepoint=="week20")
+
+diagdds=phyloseq_to_deseq2(samples_25_wk_0_20,~PatientID+Timepoint)  #	to test	for differences	between	timepoints, while controlling for individual 
+diagdds$Timepoint<-factor(diagdds$Timepoint, levels=c("week00","week20"))
+
+gm_mean = function(x, na.rm=TRUE){
+  exp(sum(log(x[x > 0]), na.rm=na.rm) / length(x))
+}
+geoMeans = apply(counts(diagdds), 1, gm_mean)
+diagdds = estimateSizeFactors(diagdds, geoMeans = geoMeans)
+diagdds = DESeq(diagdds,fitType="local")
+
+
+resultsNames(diagdds)
+res=results(diagdds, contrast=c("Timepoint","week00","week20"),cooksCutoff = FALSE)
+head(res)
+alpha = 0.1
+sigtab = res[which(res$pvalue<alpha), ]
+sigtab = cbind(as(sigtab, "data.frame"), as(tax_table(samples_25_wk_0_20)[rownames(sigtab), ], "matrix"))
+head(sigtab, 50)
+dim(sigtab)
+res
+
+
+x = tapply(sigtab$log2FoldChange, sigtab$Rank2, function(x) max(x))
+x = sort(x, TRUE)
+sigtab$phylum = factor(as.character(sigtab$Rank2), levels=names(x))
+# Genus order
+x = tapply(sigtab$log2FoldChange, sigtab$Rank6, function(x) max(x))
+x = sort(x, TRUE)
+sigtab$genus = factor(as.character(sigtab$Rank6), levels=names(x))
+
+ggplot(sigtab)+
+  aes(x=genus, y=log2FoldChange, color=phylum)+ 
+  geom_point(size=5) + 
+  theme(axis.text.x = element_text(angle = -50, hjust = 0, vjust=0.9))+
+  ggtitle("week 00 versus week 20")
+
+##plot only significant OTU ( p of 0.03), 723426118, Ruminococcus Torques
+samples_25_rel_df_723426118	<-subset(samples_25_rel_df,OTU=="723426118")
+ggplot(samples_25_rel_df_723426118)+
+  aes(x=Timepoint,y=Abundance,color=PatientID,group=PatientID,shape=Group)+
+  geom_point()+geom_line()
+```
+##week 08 versus 20, as compared that with longitudinal model as well
+```{r}
+samples_25_wk_8_20<-subset_samples(samples_25,Timepoint=="week08"|Timepoint=="week20")
+
+diagdds=phyloseq_to_deseq2(samples_25_wk_8_20,~PatientID+Timepoint)  #	to test	for differences	between	timepoints, while controlling for individual 
+diagdds$Timepoint<-factor(diagdds$Timepoint, levels=c("week08","week20"))
+
+gm_mean = function(x, na.rm=TRUE){
+  exp(sum(log(x[x > 0]), na.rm=na.rm) / length(x))
+}
+geoMeans = apply(counts(diagdds), 1, gm_mean)
+diagdds = estimateSizeFactors(diagdds, geoMeans = geoMeans)
+diagdds = DESeq(diagdds,fitType="local")
+
+
+resultsNames(diagdds)
+res=results(diagdds, contrast=c("Timepoint","week08","week20"),cooksCutoff = FALSE)
+head(res)
+alpha = 0.1
+sigtab = res[which(res$pvalue<alpha), ]
+sigtab = cbind(as(sigtab, "data.frame"), as(tax_table(samples_25_wk_8_20)[rownames(sigtab), ], "matrix"))
+head(sigtab, 50)
+dim(sigtab)
+res
+
+
+x = tapply(sigtab$log2FoldChange, sigtab$Rank2, function(x) max(x))
+x = sort(x, TRUE)
+sigtab$phylum = factor(as.character(sigtab$Rank2), levels=names(x))
+# Genus order
+x = tapply(sigtab$log2FoldChange, sigtab$Rank6, function(x) max(x))
+x = sort(x, TRUE)
+sigtab$genus = factor(as.character(sigtab$Rank6), levels=names(x))
+
+##No significant changes either. Conclusion remains the same as at genus level, no clear effects of the hookworm infection on abundance of specific taxa.
+```
