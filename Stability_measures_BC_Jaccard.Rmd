@@ -1,0 +1,721 @@
+---
+title: "Stability_measures_BC_Jaccard"
+author: "QD"
+output: html_document
+---
+
+##Compute stabilities at genus level
+```{r}
+samples_rechhi_genus_rel<-microbiome::transform(samples_rechhi_genus,"compositional")
+```
+
+##Collect all data on Bray-Curtis compared to time point 0
+```{r}
+groupA_rechhi<-subset_samples(samples_rechhi_genus_rel,Group=="A")
+phylo_R5<-subset_samples(groupA_rechhi,PatientID=="5")
+R5<-phyloseq::distance(phylo_R5, method="bray", type="samples")
+R5<-as.matrix(R5)
+R5<-R5[,5]
+R5<-as.data.frame(R5)
+R5$SampleID<-rownames(R5)
+R5<-plyr::rename(R5,c("R5"="Bray-Curtis"))
+
+phylo_R8<-subset_samples(groupA_rechhi,PatientID=="8")
+R8<-phyloseq::distance(phylo_R8, method="bray", type="samples")
+R8<-as.matrix(R8)
+R8<-R8[,5]
+R8<-as.data.frame(R8)
+R8$SampleID<-rownames(R8)
+R8<-plyr::rename(R8,c("R8"="Bray-Curtis"))
+
+phylo_R12<-subset_samples(groupA_rechhi,PatientID=="12")
+R12<-phyloseq::distance(phylo_R12, method="bray", type="samples")
+R12<-as.matrix(R12)
+R12<-R12[,1]
+R12<-as.data.frame(R12)
+R12$SampleID<-rownames(R12)
+R12<-plyr::rename(R12,c("R12"="Bray-Curtis"))
+
+phylo_R14<-subset_samples(groupA_rechhi,PatientID=="14")
+R14<-phyloseq::distance(phylo_R14, method="bray", type="samples")
+R14<-as.matrix(R14)
+R14<-R14[,4]
+R14<-as.data.frame(R14)
+R14$SampleID<-rownames(R14)
+R14<-plyr::rename(R14,c("R14"="Bray-Curtis"))
+
+phylo_R16<-subset_samples(groupA_rechhi,PatientID=="16")
+R16<-phyloseq::distance(phylo_R16, method="bray", type="samples")
+R16<-as.matrix(R16)
+R16<-R16[,5]
+R16<-as.data.frame(R16)
+R16$SampleID<-rownames(R16)
+R16<-plyr::rename(R16,c("R16"="Bray-Curtis"))
+
+phylo_R20<-subset_samples(groupA_rechhi,PatientID=="20")
+R20<-phyloseq::distance(phylo_R20, method="bray", type="samples")
+R20<-as.matrix(R20)
+R20<-R20[,4]
+R20<-as.data.frame(R20)
+R20$SampleID<-rownames(R20)
+R20<-plyr::rename(R20,c("R20"="Bray-Curtis"))
+
+groupA_BC<-dplyr::bind_rows(R5,R8)
+groupA_BC<-dplyr::bind_rows(groupA_BC,R12)
+groupA_BC<-dplyr::bind_rows(groupA_BC,R14)
+groupA_BC<-dplyr::bind_rows(groupA_BC,R16)
+groupA_BC<-dplyr::bind_rows(groupA_BC,R20)
+
+groupB_rechhi<-subset_samples(samples_rechhi_genus_rel,Group=="B")
+phylo_R4<-subset_samples(groupB_rechhi,PatientID=="4")
+R4<-phyloseq::distance(phylo_R4, method="bray", type="samples")
+R4<-as.matrix(R4)
+R4<-R4[,5]
+R4<-as.data.frame(R4)
+R4$SampleID<-rownames(R4)
+R4<-plyr::rename(R4,c("R4"="Bray-Curtis"))
+
+phylo_R7<-subset_samples(groupB_rechhi,PatientID=="7")
+R7<-phyloseq::distance(phylo_R7, method="bray", type="samples")
+R7<-as.matrix(R7)
+R7<-R7[,3]
+R7<-as.data.frame(R7)
+R7$SampleID<-rownames(R7)
+R7<-plyr::rename(R7,c("R7"="Bray-Curtis"))
+
+phylo_R9<-subset_samples(groupB_rechhi,PatientID=="9")
+R9<-phyloseq::distance(phylo_R9, method="bray", type="samples")
+R9<-as.matrix(R9)
+R9<-R9[,5]
+R9<-as.data.frame(R9)
+R9$SampleID<-rownames(R9)
+R9<-plyr::rename(R9,c("R9"="Bray-Curtis"))
+
+phylo_R10<-subset_samples(groupB_rechhi,PatientID=="10")
+R10<-phyloseq::distance(phylo_R10, method="bray", type="samples")
+R10<-as.matrix(R10)
+R10<-R10[,3]
+R10<-as.data.frame(R10)
+R10$SampleID<-rownames(R10)
+R10<-plyr::rename(R10,c("R10"="Bray-Curtis"))
+
+phylo_R15<-subset_samples(groupB_rechhi,PatientID=="15")
+R15<-phyloseq::distance(phylo_R15, method="bray", type="samples")
+R15<-as.matrix(R15)
+R15<-R15[,2]
+R15<-as.data.frame(R15)
+R15$SampleID<-rownames(R15)
+R15<-plyr::rename(R15,c("R15"="Bray-Curtis"))
+
+phylo_R17<-subset_samples(groupB_rechhi,PatientID=="17")
+R17<-phyloseq::distance(phylo_R17, method="bray", type="samples")
+R17<-as.matrix(R17)
+R17<-R17[,1]
+R17<-as.data.frame(R17)
+R17$SampleID<-rownames(R17)
+R17<-plyr::rename(R17,c("R17"="Bray-Curtis"))
+
+phylo_R18<-subset_samples(groupB_rechhi,PatientID=="18")
+R18<-phyloseq::distance(phylo_R18, method="bray", type="samples")
+R18<-as.matrix(R18)
+R18<-R18[,4]
+R18<-as.data.frame(R18)
+R18$SampleID<-rownames(R18)
+R18<-plyr::rename(R18,c("R18"="Bray-Curtis"))
+
+groupB_BC<-dplyr::bind_rows(R4,R7)
+groupB_BC<-dplyr::bind_rows(groupB_BC,R9)
+groupB_BC<-dplyr::bind_rows(groupB_BC,R10)
+groupB_BC<-dplyr::bind_rows(groupB_BC,R15)
+groupB_BC<-dplyr::bind_rows(groupB_BC,R17)
+groupB_BC<-dplyr::bind_rows(groupB_BC,R18)
+
+groupC_rechhi<-subset_samples(samples_rechhi_genus_rel,Group=="C")
+phylo_R1<-subset_samples(groupC_rechhi,PatientID=="1")
+R1<-phyloseq::distance(phylo_R1, method="bray", type="samples")
+R1<-as.matrix(R1)
+R1<-R1[,1]
+R1<-as.data.frame(R1)
+R1$SampleID<-rownames(R1)
+R1<-plyr::rename(R1,c("R1"="Bray-Curtis"))
+
+phylo_R2<-subset_samples(groupC_rechhi,PatientID=="2")
+R2<-phyloseq::distance(phylo_R2, method="bray", type="samples")
+R2<-as.matrix(R2)
+R2<-R2[,3]
+R2<-as.data.frame(R2)
+R2$SampleID<-rownames(R2)
+R2<-plyr::rename(R2,c("R2"="Bray-Curtis"))
+
+phylo_R3<-subset_samples(groupC_rechhi,PatientID=="3")
+R3<-phyloseq::distance(phylo_R3, method="bray", type="samples")
+R3<-as.matrix(R3)
+R3<-R3[,5]
+R3<-as.data.frame(R3)
+R3$SampleID<-rownames(R3)
+R3<-plyr::rename(R3,c("R3"="Bray-Curtis"))
+
+phylo_R6<-subset_samples(groupC_rechhi,PatientID=="6")
+R6<-phyloseq::distance(phylo_R6, method="bray", type="samples")
+R6<-as.matrix(R6)
+R6<-R6[,4]
+R6<-as.data.frame(R6)
+R6$SampleID<-rownames(R6)
+R6<-plyr::rename(R6,c("R6"="Bray-Curtis"))
+
+phylo_R11<-subset_samples(groupC_rechhi,PatientID=="11")
+R11<-phyloseq::distance(phylo_R11, method="bray", type="samples")
+R11<-as.matrix(R11)
+R11<-R11[,1]
+R11<-as.data.frame(R11)
+R11$SampleID<-rownames(R11)
+R11<-plyr::rename(R11,c("R11"="Bray-Curtis"))
+
+phylo_R13<-subset_samples(groupC_rechhi,PatientID=="13")
+R13<-phyloseq::distance(phylo_R13, method="bray", type="samples")
+R13<-as.matrix(R13)
+R13<-R13[,3]
+R13<-as.data.frame(R13)
+R13$SampleID<-rownames(R13)
+R13<-plyr::rename(R13,c("R13"="Bray-Curtis"))
+
+phylo_R19<-subset_samples(groupC_rechhi,PatientID=="19")
+R19<-phyloseq::distance(phylo_R19, method="bray", type="samples")
+R19<-as.matrix(R19)
+R19<-R19[,4]
+R19<-as.data.frame(R19)
+R19$SampleID<-rownames(R19)
+R19<-plyr::rename(R19,c("R19"="Bray-Curtis"))
+
+groupC_BC<-dplyr::bind_rows(R1,R2)
+groupC_BC<-dplyr::bind_rows(groupC_BC,R3)
+groupC_BC<-dplyr::bind_rows(groupC_BC,R6)
+groupC_BC<-dplyr::bind_rows(groupC_BC,R11)
+groupC_BC<-dplyr::bind_rows(groupC_BC,R13)
+groupC_BC<-dplyr::bind_rows(groupC_BC,R19)
+
+full_BC<-dplyr::bind_rows(groupA_BC,groupB_BC)
+full_BC<-dplyr::bind_rows(full_BC,groupC_BC)
+
+metad_divers_rechhi_genus_BC<-merge(metad_divers_rechhi_genus,full_BC,by="SampleID")
+metad_divers_rechhi_genus_BC$Stability_BC<-1-metad_divers_rechhi_genus_BC$`Bray-Curtis`
+```
+## Plot Bray-Curtis with group means+individual lines for variation impression
+```{r}
+group_means_BC<-metad_divers_rechhi_genus_BC %>% group_by(Group,Timepoint) %>% dplyr::summarise(Stability_BC=mean(Stability_BC))
+
+ggplot(metad_divers_rechhi_genus_BC)+
+  aes(x=Timepoint,y=Stability_BC,group=Group,color=Group)+
+  geom_line(aes(group=PatientID))+
+  geom_line(data=group_means_BC,size=2)
+```
+##Statistical testing using stability variable. First look at deltas group A versus C at week 4
+```{r}
+metad_divers_BC_week00_week04<-subset(metad_divers_rechhi_genus_BC,Timepoint=="week00"|Timepoint=="week04") 
+
+wide_BC<-dcast(metad_divers_BC_week00_week04,PatientID+Group~Timepoint,value.var="Stability_BC")
+group_by(wide_BC,Group) %>% 
+  dplyr::summarise(
+    count = n(),
+    mean = mean(week04, na.rm = TRUE),
+    sd = sd(week04, na.rm = TRUE)
+  )
+with(wide_BC,shapiro.test(wide_BC$week04[Group=="A"]))
+with(wide_BC,shapiro.test(wide_BC$week04[Group=="C"]))##Normally distributed data for both groups,so continue with variance testing
+wide_BC_t_test<-subset(wide_BC,Group!="B")
+var.test(week04~Group,wide_BC_t_test) ##Variances are different, this is default, so can continue
+res_BC<-t.test(week04~Group,data=wide_BC_t_test)
+res_BC ## So no significant treatment effect on BC
+```
+##Longitudinal BC, select week 08 to week 20
+```{r}
+longitudinal_BC<-subset(metad_divers_rechhi_genus_BC,Timepoint=="week08"|Timepoint=="week14"|Timepoint=="week20")
+with(longitudinal_BC, tapply(Stability_BC, list(Timepoint, Group),mean, na.rm = TRUE))##Looking at means there will not be an increased stability over time.
+longitudinal_BC<-lmer(Stability_BC~Group+Timepoint+(1|PatientID),data=longitudinal_BC)
+summary(longitudinal_BC)
+qqnorm(resid(longitudinal_BC))
+qqline(resid(longitudinal_BC))
+```
+##Correlation plot for eosinophil counts versus BC. Have to remove the week00 samples here, as this will skew the correlation a lot
+```{r}
+genus_BC_excl_week0<-subset(metad_divers_rechhi_genus_BC,Timepoint!="week00")
+ggplot(genus_BC_excl_week0)+
+  aes(x=Stability_BC,y=Eosinophil.count)+
+  geom_point()+
+  geom_smooth(method=lm,level=0.95)
+ cor(genus_BC_excl_week0$Eosinophil.count,genus_BC_excl_week0$Stability_BC,method="spearman",use="complete.obs") ##Nothing
+ colnames(metad_divers_rechhi_genus_BC) 
+```
+##Jaccard Index
+```{r}
+groupA_rechhi<-subset_samples(samples_rechhi_genus_rel,Group=="A")
+phylo_R5<-subset_samples(groupA_rechhi,PatientID=="5")
+R5<-phyloseq::distance(phylo_R5, method="jaccard",binary=TRUE, type="samples")
+R5<-as.matrix(R5)
+R5<-R5[,5]
+R5<-as.data.frame(R5)
+R5$SampleID<-rownames(R5)
+R5<-plyr::rename(R5,c("R5"="Jaccard"))
+
+phylo_R8<-subset_samples(groupA_rechhi,PatientID=="8")
+R8<-phyloseq::distance(phylo_R8, method="jaccard",binary=TRUE, type="samples")
+R8<-as.matrix(R8)
+R8<-R8[,5]
+R8<-as.data.frame(R8)
+R8$SampleID<-rownames(R8)
+R8<-plyr::rename(R8,c("R8"="Jaccard"))
+
+phylo_R12<-subset_samples(groupA_rechhi,PatientID=="12")
+R12<-phyloseq::distance(phylo_R12, method="jaccard",binary=TRUE, type="samples")
+R12<-as.matrix(R12)
+R12<-R12[,1]
+R12<-as.data.frame(R12)
+R12$SampleID<-rownames(R12)
+R12<-plyr::rename(R12,c("R12"="Jaccard"))
+
+phylo_R14<-subset_samples(groupA_rechhi,PatientID=="14")
+R14<-phyloseq::distance(phylo_R14, method="jaccard",binary=TRUE, type="samples")
+R14<-as.matrix(R14)
+R14<-R14[,4]
+R14<-as.data.frame(R14)
+R14$SampleID<-rownames(R14)
+R14<-plyr::rename(R14,c("R14"="Jaccard"))
+
+phylo_R16<-subset_samples(groupA_rechhi,PatientID=="16")
+R16<-phyloseq::distance(phylo_R16, method="jaccard",binary=TRUE, type="samples")
+R16<-as.matrix(R16)
+R16<-R16[,5]
+R16<-as.data.frame(R16)
+R16$SampleID<-rownames(R16)
+R16<-plyr::rename(R16,c("R16"="Jaccard"))
+
+phylo_R20<-subset_samples(groupA_rechhi,PatientID=="20")
+R20<-phyloseq::distance(phylo_R20, method="jaccard",binary=TRUE, type="samples")
+R20<-as.matrix(R20)
+R20<-R20[,4]
+R20<-as.data.frame(R20)
+R20$SampleID<-rownames(R20)
+R20<-plyr::rename(R20,c("R20"="Jaccard"))
+
+groupA_Jaccard<-dplyr::bind_rows(R5,R8)
+groupA_Jaccard<-dplyr::bind_rows(groupA_Jaccard,R12)
+groupA_Jaccard<-dplyr::bind_rows(groupA_Jaccard,R14)
+groupA_Jaccard<-dplyr::bind_rows(groupA_Jaccard,R16)
+groupA_Jaccard<-dplyr::bind_rows(groupA_Jaccard,R20)
+
+groupB_rechhi<-subset_samples(samples_rechhi_genus_rel,Group=="B")
+phylo_R4<-subset_samples(groupB_rechhi,PatientID=="4")
+R4<-phyloseq::distance(phylo_R4, method="jaccard",binary=TRUE, type="samples")
+R4<-as.matrix(R4)
+R4<-R4[,5]
+R4<-as.data.frame(R4)
+R4$SampleID<-rownames(R4)
+R4<-plyr::rename(R4,c("R4"="Jaccard"))
+
+phylo_R7<-subset_samples(groupB_rechhi,PatientID=="7")
+R7<-phyloseq::distance(phylo_R7, method="jaccard",binary=TRUE, type="samples")
+R7<-as.matrix(R7)
+R7<-R7[,3]
+R7<-as.data.frame(R7)
+R7$SampleID<-rownames(R7)
+R7<-plyr::rename(R7,c("R7"="Jaccard"))
+
+phylo_R9<-subset_samples(groupB_rechhi,PatientID=="9")
+R9<-phyloseq::distance(phylo_R9, method="jaccard",binary=TRUE, type="samples")
+R9<-as.matrix(R9)
+R9<-R9[,5]
+R9<-as.data.frame(R9)
+R9$SampleID<-rownames(R9)
+R9<-plyr::rename(R9,c("R9"="Jaccard"))
+
+phylo_R10<-subset_samples(groupB_rechhi,PatientID=="10")
+R10<-phyloseq::distance(phylo_R10, method="jaccard",binary=TRUE, type="samples")
+R10<-as.matrix(R10)
+R10<-R10[,3]
+R10<-as.data.frame(R10)
+R10$SampleID<-rownames(R10)
+R10<-plyr::rename(R10,c("R10"="Jaccard"))
+
+phylo_R15<-subset_samples(groupB_rechhi,PatientID=="15")
+R15<-phyloseq::distance(phylo_R15, method="jaccard",binary=TRUE, type="samples")
+R15<-as.matrix(R15)
+R15<-R15[,2]
+R15<-as.data.frame(R15)
+R15$SampleID<-rownames(R15)
+R15<-plyr::rename(R15,c("R15"="Jaccard"))
+
+phylo_R17<-subset_samples(groupB_rechhi,PatientID=="17")
+R17<-phyloseq::distance(phylo_R17, method="jaccard",binary=TRUE, type="samples")
+R17<-as.matrix(R17)
+R17<-R17[,1]
+R17<-as.data.frame(R17)
+R17$SampleID<-rownames(R17)
+R17<-plyr::rename(R17,c("R17"="Jaccard"))
+
+phylo_R18<-subset_samples(groupB_rechhi,PatientID=="18")
+R18<-phyloseq::distance(phylo_R18, method="jaccard",binary=TRUE, type="samples")
+R18<-as.matrix(R18)
+R18<-R18[,4]
+R18<-as.data.frame(R18)
+R18$SampleID<-rownames(R18)
+R18<-plyr::rename(R18,c("R18"="Jaccard"))
+
+groupB_Jaccard<-dplyr::bind_rows(R4,R7)
+groupB_Jaccard<-dplyr::bind_rows(groupB_Jaccard,R9)
+groupB_Jaccard<-dplyr::bind_rows(groupB_Jaccard,R10)
+groupB_Jaccard<-dplyr::bind_rows(groupB_Jaccard,R15)
+groupB_Jaccard<-dplyr::bind_rows(groupB_Jaccard,R17)
+groupB_Jaccard<-dplyr::bind_rows(groupB_Jaccard,R18)
+
+groupC_rechhi<-subset_samples(samples_rechhi_genus_rel,Group=="C")
+phylo_R1<-subset_samples(groupC_rechhi,PatientID=="1")
+R1<-phyloseq::distance(phylo_R1, method="jaccard",binary=TRUE, type="samples")
+R1<-as.matrix(R1)
+R1<-R1[,1]
+R1<-as.data.frame(R1)
+R1$SampleID<-rownames(R1)
+R1<-plyr::rename(R1,c("R1"="Jaccard"))
+
+phylo_R2<-subset_samples(groupC_rechhi,PatientID=="2")
+R2<-phyloseq::distance(phylo_R2, method="jaccard",binary=TRUE, type="samples")
+R2<-as.matrix(R2)
+R2<-R2[,3]
+R2<-as.data.frame(R2)
+R2$SampleID<-rownames(R2)
+R2<-plyr::rename(R2,c("R2"="Jaccard"))
+
+phylo_R3<-subset_samples(groupC_rechhi,PatientID=="3")
+R3<-phyloseq::distance(phylo_R3, method="jaccard",binary=TRUE, type="samples")
+R3<-as.matrix(R3)
+R3<-R3[,5]
+R3<-as.data.frame(R3)
+R3$SampleID<-rownames(R3)
+R3<-plyr::rename(R3,c("R3"="Jaccard"))
+
+phylo_R6<-subset_samples(groupC_rechhi,PatientID=="6")
+R6<-phyloseq::distance(phylo_R6, method="jaccard",binary=TRUE, type="samples")
+R6<-as.matrix(R6)
+R6<-R6[,4]
+R6<-as.data.frame(R6)
+R6$SampleID<-rownames(R6)
+R6<-plyr::rename(R6,c("R6"="Jaccard"))
+
+phylo_R11<-subset_samples(groupC_rechhi,PatientID=="11")
+R11<-phyloseq::distance(phylo_R11, method="jaccard",binary=TRUE, type="samples")
+R11<-as.matrix(R11)
+R11<-R11[,1]
+R11<-as.data.frame(R11)
+R11$SampleID<-rownames(R11)
+R11<-plyr::rename(R11,c("R11"="Jaccard"))
+
+phylo_R13<-subset_samples(groupC_rechhi,PatientID=="13")
+R13<-phyloseq::distance(phylo_R13, method="jaccard",binary=TRUE, type="samples")
+R13<-as.matrix(R13)
+R13<-R13[,3]
+R13<-as.data.frame(R13)
+R13$SampleID<-rownames(R13)
+R13<-plyr::rename(R13,c("R13"="Jaccard"))
+
+phylo_R19<-subset_samples(groupC_rechhi,PatientID=="19")
+R19<-phyloseq::distance(phylo_R19, method="jaccard",binary=TRUE, type="samples")
+R19<-as.matrix(R19)
+R19<-R19[,4]
+R19<-as.data.frame(R19)
+R19$SampleID<-rownames(R19)
+R19<-plyr::rename(R19,c("R19"="Jaccard"))
+
+groupC_Jaccard<-dplyr::bind_rows(R1,R2)
+groupC_Jaccard<-dplyr::bind_rows(groupC_Jaccard,R3)
+groupC_Jaccard<-dplyr::bind_rows(groupC_Jaccard,R6)
+groupC_Jaccard<-dplyr::bind_rows(groupC_Jaccard,R11)
+groupC_Jaccard<-dplyr::bind_rows(groupC_Jaccard,R13)
+groupC_Jaccard<-dplyr::bind_rows(groupC_Jaccard,R19)
+
+full_Jaccard<-dplyr::bind_rows(groupA_Jaccard,groupB_Jaccard)
+full_Jaccard<-dplyr::bind_rows(full_Jaccard,groupC_Jaccard)
+
+metad_divers_rechhi_genus_Jaccard<-merge(metad_divers_rechhi_genus,full_Jaccard,by="SampleID")
+metad_divers_rechhi_genus_Jaccard$Jaccard<-1-metad_divers_rechhi_genus_Jaccard$Jaccard
+```
+##Test Jaccard and some general plots
+```{r}
+group_means_Jaccard<-metad_divers_rechhi_genus_Jaccard %>% group_by(Group,Timepoint) %>% dplyr::summarise(Jaccard=mean(Jaccard))
+
+ggplot(metad_divers_rechhi_genus_Jaccard)+
+  aes(x=Timepoint,y=Jaccard,group=Group,color=Group)+
+  geom_line(aes(group=PatientID))+
+  geom_line(data=group_means_Jaccard,size=2)
+```
+##Statistical testing using stability variable. First look at deltas group A versus C at week 4
+```{r}
+metad_divers_Jaccard_week00_week04<-subset(metad_divers_rechhi_genus_Jaccard,Timepoint=="week00"|Timepoint=="week04") 
+
+wide_Jaccard<-dcast(metad_divers_Jaccard_week00_week04,PatientID+Group~Timepoint,value.var="Jaccard")
+group_by(wide_Jaccard,Group) %>% 
+  dplyr::summarise(
+    count = n(),
+    mean = mean(week04, na.rm = TRUE),
+    sd = sd(week04, na.rm = TRUE)
+  )
+with(wide_Jaccard,shapiro.test(wide_Jaccard$week04[Group=="A"]))
+with(wide_Jaccard,shapiro.test(wide_Jaccard$week04[Group=="C"]))##Normally distributed data for both groups,so continue with variance testing
+wide_Jaccard_t_test<-subset(wide_Jaccard,Group!="B")
+var.test(week04~Group,wide_Jaccard_t_test) ##Variances are not different
+res_Jaccard<-t.test(week04~Group,data=wide_Jaccard_t_test,var.equal=TRUE)
+res_Jaccard ## So no significant treatment effect on Jaccard
+```
+##Longitudinal Jaccard at genus level, select week 08 to week 20
+```{r}
+longitudinal_Jaccard<-subset(metad_divers_rechhi_genus_Jaccard,Timepoint=="week08"|Timepoint=="week14"|Timepoint=="week20")
+with(longitudinal_Jaccard, tapply(Jaccard, list(Timepoint, Group),mean, na.rm = TRUE))##Looking at means there will not be an increased stability over time.
+longitudinal_Jaccard<-lmer(Jaccard~Group+Timepoint+(1|PatientID),data=longitudinal_Jaccard)
+summary(longitudinal_Jaccard)
+qqnorm(resid(longitudinal_Jaccard))
+qqline(resid(longitudinal_Jaccard))
+```
+
+#Clinical group division at genus test
+##Stability using BC based on clinical group division
+```{r}
+group_means_BC_genus<- metad_divers_rechhi_genus_BC %>% group_by(Complaints,Timepoint) %>% dplyr::summarise(Stability_BC=mean(Stability_BC))
+
+ggplot(metad_divers_rechhi_genus_BC)+
+  aes(x=Timepoint,y=Stability_BC,color=Complaints,group=Complaints)+
+  geom_line(aes(group=PatientID))+
+  geom_line(data=group_means_BC_genus,size=2)
+
+longitudinal_BC<-subset(metad_divers_rechhi_genus_BC,Timepoint=="week08"|Timepoint=="week14"|Timepoint=="week20")
+with(longitudinal_BC, tapply(Stability_BC, list(Timepoint, Complaints),mean, na.rm = TRUE))
+longitudinal_BC<-lmer(Stability_BC~Complaints*Timepoint+(1|PatientID),data=longitudinal_BC)
+summary(longitudinal_BC)
+qqnorm(resid(longitudinal_BC))
+qqline(resid(longitudinal_BC))
+```
+#Stability using Jaccard based on clinical group division
+```{r}
+group_means_Jaccard_genus<- metad_divers_rechhi_genus_Jaccard %>% group_by(Complaints,Timepoint) %>% dplyr::summarise(Jaccard=mean(Jaccard))
+
+ggplot(metad_divers_rechhi_genus_Jaccard)+
+  aes(x=Timepoint,y=Jaccard,color=Complaints,group=Complaints)+
+  geom_line(aes(group=PatientID))+
+  geom_line(data=group_means_Jaccard_genus,size=2) ##Perhaps some interesting behaviour of Jaccard at week 8, check if any differences
+```
+##Longitudinal model with Jaccard week 8-20
+```{r}
+longitudinal_Jaccard<-subset(metad_divers_rechhi_genus_Jaccard,Timepoint=="week08"|Timepoint=="week14"|Timepoint=="week20")
+with(longitudinal_Jaccard, tapply(Jaccard, list(Timepoint, Complaints),mean, na.rm = TRUE))
+longitudinal_Jaccard<-lmer(Jaccard~Complaints*Timepoint+(1|PatientID),data=longitudinal_Jaccard)
+summary(longitudinal_Jaccard)
+qqnorm(resid(longitudinal_Jaccard))
+qqline(resid(longitudinal_Jaccard))
+
+##Also do a t-test, just in case at week 8 for light versus heavy
+metad_divers_Jaccard_week08<-subset(metad_divers_rechhi_genus_Jaccard,Timepoint=="week08") 
+
+wide_Jaccard_week08<-dcast(metad_divers_Jaccard_week08,PatientID+Complaints~Timepoint,value.var="Jaccard")
+group_by(wide_Jaccard_week08,Complaints) %>% 
+  dplyr::summarise(
+    count = n(),
+    mean = mean(week08, na.rm = TRUE),
+    sd = sd(week08, na.rm = TRUE)
+  )
+with(wide_Jaccard_week08,shapiro.test(wide_Jaccard_week08$week08[Complaints=="Light"]))
+with(wide_Jaccard_week08,shapiro.test(wide_Jaccard_week08$week08[Complaints=="Heavy"]))##Normally distributed data for both groups,so continue with variance testing
+var.test(week08~Complaints,wide_Jaccard_week08) ##Variances are equal, so indicate in t-test
+res_Jaccard<-t.test(week08~Complaints,data=wide_Jaccard_week08,var.equal=TRUE)
+res_Jaccard
+
+##Paired t-test for heavy group week 8 vs 20. 
+metad_divers_Jaccard_Heavy<-subset(metad_divers_rechhi_genus_Jaccard,Complaints=="Heavy")
+metad_divers_Jaccard_Heavy_8_20<-subset(metad_divers_Jaccard_Heavy,Timepoint=="week08"|Timepoint=="week20")
+
+wide_Jaccard_Heavy_8_20<-dcast(metad_divers_Jaccard_Heavy_8_20,PatientID~Timepoint,value.var="Jaccard")
+
+with(wide_Jaccard_Heavy_8_20,shapiro.test(wide_Jaccard_Heavy_8_20$week08))
+with(wide_Jaccard_Heavy_8_20,shapiro.test(wide_Jaccard_Heavy_8_20$week20))##Normally distributed data for both groups,so continue with variance testing
+var.test(wide_Jaccard_Heavy_8_20$week08,wide_Jaccard_Heavy_8_20$week20) ##Variances are equal, so indicate in t-test
+res_Jaccard<-t.test(wide_Jaccard_Heavy_8_20$week08,wide_Jaccard_Heavy_8_20$week20,var.equal=TRUE,paired=TRUE)
+res_Jaccard
+
+```
+##Figure for publication using BC at genus level for study groups
+```{r}
+group_means_CI_BC<-metad_divers_rechhi_genus_BC %>% group_by(Group,Timepoint) %>% dplyr::summarise(Stability_BC_mean=mean(Stability_BC),Stability_BC_ci=1.96*sd(Stability_BC)/sqrt(n()))
+group_means_CI_BC<-rename(group_means_CI_BC,c("Group"="Dosage_Group"))
+group_means_CI_BC<-subset(group_means_CI_BC,Timepoint!="week00")
+
+##Chop off week 00 on request of Meta, as this is basically just a baseline comparison which doesn't convey any information (and distracts from the actual message)
+pd <- position_dodge(width = 0.2)
+BC_genus_groups<-ggplot(group_means_CI_BC)+
+  aes(x=Timepoint,y=Stability_BC_mean,group=Dosage_Group,color=Dosage_Group)+
+  geom_line(position=pd)+ ## aes(linetype=Dosage_Group),
+  geom_errorbar(aes(ymin=Stability_BC_mean-Stability_BC_ci,ymax=Stability_BC_mean+Stability_BC_ci),width=0.1,position=pd)+
+  scale_color_manual(values=c("red", "blue", "green3"))+
+  geom_point(size=3,position=pd)+
+  geom_point(size=2,color="white",position=pd)+
+  ylim(0.4,1)+
+  ylab("1-Bray-Curtis")+
+  ggtitle("Stability (Bray-Curtis)")+
+  theme(panel.background = element_rect(fill = "white"),    
+    legend.key=element_rect(fill="white"),          
+    axis.line.x=element_line(colour="black",size=1), 
+    axis.line.y=element_line(colour="black",size=1))
+```
+
+##Figure for publication using BC at genus level for clinical groups
+```{r}
+group_means_CI_BC<-metad_divers_rechhi_genus_BC %>% group_by(Complaints,Timepoint) %>% dplyr::summarise(Stability_BC_mean=mean(Stability_BC),Stability_BC_ci=1.96*sd(Stability_BC)/sqrt(n()))
+group_means_CI_BC<-rename(group_means_CI_BC,c("Complaints"="GI_Symptoms"))
+group_means_CI_BC$GI_Symptoms<-revalue(group_means_CI_BC$GI_Symptoms,c("Light"="Lo","Heavy"="Hi"))
+##Chop off week 00 on request of Meta, as this is basically just a baseline comparison which doesn't convey any information (and distracts from the actual message)
+group_means_CI_BC<-subset(group_means_CI_BC,Timepoint!="week00")
+
+pd <- position_dodge(width = 0.2)
+BC_genus_clinical<-ggplot(group_means_CI_BC)+
+  aes(x=Timepoint,y=Stability_BC_mean,group=GI_Symptoms,color=GI_Symptoms)+
+  geom_line(position=pd)+ ## aes(linetype=GI_Symptoms),
+  geom_errorbar(aes(ymin=Stability_BC_mean-Stability_BC_ci,ymax=Stability_BC_mean+Stability_BC_ci),width=0.1,position=pd)+
+  scale_color_manual(values=c("orange", "blue"))+
+  geom_point(size=3,position=pd)+
+  geom_point(size=2,color="white",position=pd)+
+  ylim(0.4,1)+
+  ylab("1-Bray-Curtis")+
+  ggtitle("Stability (Bray-Curtis)")+
+  theme(panel.background = element_rect(fill = "white"),    
+    legend.key=element_rect(fill="white"),          
+    axis.line.x=element_line(colour="black",size=1), 
+    axis.line.y=element_line(colour="black",size=1))
+```
+##Figure for publication using Jaccard at genus level for study groups
+```{r}
+group_means_CI_Jaccard<-metad_divers_rechhi_genus_Jaccard %>% group_by(Group,Timepoint) %>% dplyr::summarise(Jaccard_mean=mean(Jaccard),Jaccard_ci=1.96*sd(Jaccard)/sqrt(n()))
+group_means_CI_Jaccard<-rename(group_means_CI_Jaccard,c("Group"="Dosage_Group"))
+
+##Chop off week 00 on request of Meta, as this is basically just a baseline comparison which doesn't convey any information (and distracts from the actual message)
+group_means_CI_Jaccard<-subset(group_means_CI_Jaccard,Timepoint!="week00")
+
+pd <- position_dodge(width = 0.2)
+Jaccard_genus_groups<-ggplot(group_means_CI_Jaccard)+
+  aes(x=Timepoint,y=Jaccard_mean,group=Dosage_Group,color=Dosage_Group)+
+  geom_line(position=pd)+ ## aes(linetype=Dosage_Group),
+  geom_errorbar(aes(ymin=Jaccard_mean-Jaccard_ci,ymax=Jaccard_mean+Jaccard_ci),width=0.1,position=pd)+
+  scale_color_manual(values=c("red", "blue", "green3"))+
+  geom_point(size=3,position=pd)+
+  geom_point(size=2,color="white",position=pd)+
+  ylim(0.7,1)+
+  ggtitle("Stability (Jaccard)")+
+  ylab("1-Jaccard")+
+  theme(panel.background = element_rect(fill = "white"),    
+    legend.key=element_rect(fill="white"),          
+    axis.line.x=element_line(colour="black",size=1), 
+    axis.line.y=element_line(colour="black",size=1))
+```
+##Figure for publication using Jaccard at genus level for clinical groups
+```{r}
+group_means_CI_Jaccard<-metad_divers_rechhi_genus_Jaccard %>% group_by(Complaints,Timepoint) %>% dplyr::summarise(Jaccard_mean=mean(Jaccard),Jaccard_ci=1.96*sd(Jaccard)/sqrt(n()))
+group_means_CI_Jaccard<-rename(group_means_CI_Jaccard,c("Complaints"="GI_Symptoms"))
+group_means_CI_Jaccard$GI_Symptoms<-revalue(group_means_CI_Jaccard$GI_Symptoms,c("Light"="Lo","Heavy"="Hi"))
+
+##Chop off week 00 on request of Meta, as this is basically just a baseline comparison which doesn't convey any information (and distracts from the actual message)
+group_means_CI_Jaccard<-subset(group_means_CI_Jaccard,Timepoint!="week00")
+
+pd <- position_dodge(width = 0.2)
+Jaccard_genus_complaints<-ggplot(group_means_CI_Jaccard)+
+  aes(x=Timepoint,y=Jaccard_mean,group=GI_Symptoms,color=GI_Symptoms)+
+  geom_line(position=pd)+ ## aes(linetype=GI_Symptoms),
+  geom_errorbar(aes(ymin=Jaccard_mean-Jaccard_ci,ymax=Jaccard_mean+Jaccard_ci),width=0.1,position=pd)+
+    scale_color_manual(values=c("orange", "blue"))+
+  geom_point(size=3,position=pd)+
+  geom_point(size=2,color="white",position=pd)+
+  ylim(0.7,1)+
+  ylab("1-Jaccard")+
+  ggtitle("Stability (Jaccard)")+
+  theme(panel.background = element_rect(fill = "white"),    
+    legend.key=element_rect(fill="white"),          
+    axis.line.x=element_line(colour="black",size=1), 
+    axis.line.y=element_line(colour="black",size=1))
+```
+##Combine the 4 figures using ggarrange
+```{r}
+ggarrange(BC_genus_groups,BC_genus_clinical,Jaccard_genus_groups,Jaccard_genus_complaints,labels = c("A", "B", "C","D"),ncol = 2, nrow = 2)
+```
+##Combine 4 figures for poster (OTU level diversity and stability)
+```{r}
+poster_Symptom_Groups<-ggarrange(Chao1_OTU_clinical_groups,Shannon_OTU_clinical_groups,Jaccard_genus_complaints,BC_genus_clinical,labels=c("A","B","C","D"),ncol=2,nrow=2)
+ggsave(file="H:/MyDocs/ReCHHI/Figures/poster_Symptom_Groups.svg", plot=poster_Symptom_Groups, width=10.5,height=8,dpi=1200)
+```
+
+#Eosinophil/egg count section
+##Correlation plot for eosinophil counts Stability. Have to remove the week00 samples here, as this will skew the correlation a lot
+```{r}
+genus_Jacc_excl_week0<-subset(metad_divers_rechhi_genus_Jaccard,Timepoint!="week00")
+colnames(genus_Jacc_excl_week0)
+cor_eos_Jaccard<-ggplot(genus_Jacc_excl_week0)+
+  aes(x=Jaccard,y=Eosinophil.count)+
+  geom_point()+
+  geom_smooth(method=lm,level=0.95)+
+  stat_cor(method="spearman")+
+  xlab("1-Jaccard")+
+  ylab("Eosinophil_Count (*10^9/L)")
+ cor(genus_Jacc_excl_week0$Eosinophil.count,genus_Jacc_excl_week0$Jaccard,method="spearman",use="complete.obs")
+ cor.test(genus_Jacc_excl_week0$Eosinophil.count,genus_Jacc_excl_week0$Jaccard,method="spearman",use="complete.obs")
+which.min(genus_Jacc_excl_week0$Jaccard) ## As there was 1 clear outlier based on Jaccard index, check which one this is
+genus_Jacc_excl_week0[64,]
+genus_Jacc_excl_week0_472<-subset(genus_Jacc_excl_week0,PatientID!="9")
+
+ggplot(genus_Jacc_excl_week0_472)+
+  aes(x=Jaccard,y=Eosinophil.count)+
+  geom_point()+
+  geom_smooth(method=lm)+
+  stat_cor(method="spearman")
+
+ cor(genus_Jacc_excl_week0_472$Eosinophil.count,genus_Jacc_excl_week0_472$Jaccard,method="spearman",use="complete.obs")
+ cor.test(genus_Jacc_excl_week0_472$Eosinophil.count,genus_Jacc_excl_week0_472$Jaccard,method="spearman",use="complete.obs")
+
+##Exclude the AB user, just for a check
+genus_Jacc_excl_week0_820<-subset(genus_Jacc_excl_week0,PatientID!="18")
+ggplot(genus_Jacc_excl_week0_820)+
+  aes(x=Jaccard,y=Eosinophil.count)+
+  geom_point()+
+  geom_smooth(method=lm)
+ cor(genus_Jacc_excl_week0_820$Eosinophil.count,genus_Jacc_excl_week0_820$Jaccard,method="spearman",use="complete.obs")
+ 
+ ##Also plot correlations per week, just to check from which week(s) the significance is driven
+Jaccard_Correlations_Per_Week<-ggplot(genus_Jacc_excl_week0)+
+  aes(x=Jaccard,y=Eosinophil.count)+
+  geom_point()+
+  #geom_smooth(method=lm,level=0.95)+
+  stat_cor(method="spearman")+
+  xlab("1-Jaccard")+
+  ylab("Eosinophil_Count (*10^9/L)")+
+  facet_wrap(~Timepoint,scales="free_y")
+ggsave(file="H:/MyDocs/ReCHHI/Figures/Jaccard_Correlations_Per_Week.svg",plot=Jaccard_Correlations_Per_Week, width=6,height=9,dpi=1200)
+
+```
+##Same correlation plot for Bray-Curtis, nothing much to see, but just to include in the figure
+```{r}
+genus_BC_excl_week0<-subset(metad_divers_rechhi_genus_BC,Timepoint!="week00")
+cor_eos_BC<-ggplot(genus_BC_excl_week0)+
+  aes(x=Stability_BC,y=Eosinophil.count)+
+  geom_point()+
+  geom_smooth(method=lm,level=0.95)+
+  stat_cor(method="spearman")+
+  xlab("1-Bray-Curtis")+
+  ylab("Eosinophil_Count (*10^9/L)")
+
+
+##Also plot correlations per week to see if any differences occur there.
+BC_Correlations_Per_Week<-ggplot(genus_BC_excl_week0)+
+  aes(x=Stability_BC,y=Eosinophil.count)+
+  geom_point()+
+  #geom_smooth(method=lm,level=0.95)+
+  stat_cor(method="spearman")+
+  xlab("1-Bray-Curtis")+
+  ylab("Eosinophil_Count (*10^9/L)")+
+  facet_wrap(~Timepoint,scales="free_y")
+ggsave(file="H:/MyDocs/ReCHHI/Figures/BC_Correlations_Per_Week.svg",plot=BC_Correlations_Per_Week, width=6,height=9,dpi=1200)
+
+##Combine correlation plots stratified by week
+corr_stability_stratified_week<-ggarrange(Jaccard_Correlations_Per_Week,BC_Correlations_Per_Week,labels = c("A", "B"),ncol = 2, nrow = 1)
+ggsave(file="H:/MyDocs/ReCHHI/Figures/FigS4_Correlations_stratified_week.svg",plot=corr_stability_stratified_week, width=9,height=6,dpi=1200)
+```
