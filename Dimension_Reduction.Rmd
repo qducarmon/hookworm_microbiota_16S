@@ -1,0 +1,46 @@
+---
+title: "Dimension_Reduction"
+author: "QD"
+output: html_document
+---
+
+```{r}
+##Found some very nice code online for very distinguishable colors (for categorical data)! Looks indeed much better than the RcolorBrewer
+set.seed(10000) ## To ensure reproducibility
+tsne_samples<-tsne_phyloseq(samples_rechhi)
+c25 <- c(
+  "dodgerblue2", "#E31A1C", # red
+  "green4",
+  "#6A3D9A", # purple
+  "#FF7F00", # orange
+  "black", "gold1",
+  "skyblue2", "#FB9A99", # lt pink
+  "palegreen2",
+  "#CAB2D6", # lt purple
+  "#FDBF6F", # lt orange
+  "gray70", "khaki2",
+  "maroon", "orchid1", "deeppink1", "blue1", "steelblue4",
+  "darkturquoise", "green1", "yellow4", "yellow3",
+  "darkorange4", "brown"
+)
+
+sample_data(samples_rechhi)<-rename(sample_data(samples_rechhi),c("Complaints"="GI_Symptoms"))
+sample_data(samples_rechhi)<-rename(sample_data(samples_rechhi),c("Group"="Dosage_Group"))
+sample_data(samples_rechhi)$GI_Symptoms<-revalue(sample_data(samples_rechhi)$GI_Symptoms,c("Light"="Lo","Heavy"="Hi"))
+
+##Reviewer requested for coloring by both symptoms and dosage groups, so let's do that. Need to rename a couple variables for that as well, see lines above.
+Tsne_Anonymous<-plot_tsne_phyloseq(samples_rechhi,tsne_samples,shape="Timepoint",color="PatientID")+geom_point(size=2.5)+xlab("t-SNE1")+ylab("t-SNE2")+scale_color_manual(values=c25)+labs(color="VolunteerID")+guides(shape=guide_legend(order=1),color=guide_legend(order=2))
+
+Tsne_Symptoms<-plot_tsne_phyloseq(samples_rechhi,tsne_samples,shape="Timepoint",color="GI_Symptoms")+geom_point(size=2.5)+xlab("t-SNE1")+ylab("t-SNE2")+scale_color_manual(values=c("orange", "blue"))+labs(color="GI_Symptoms")+guides(shape=guide_legend(order=1),color=guide_legend(order=2))
+
+Tsne_Dosage_group<-plot_tsne_phyloseq(samples_rechhi,tsne_samples,shape="Timepoint",color="Dosage_Group")+geom_point(size=2.5)+xlab("t-SNE1")+ylab("t-SNE2")+scale_color_manual(values=c("red", "blue", "green3"))+labs(color="Dosage_Group")+guides(shape=guide_legend(order=1),color=guide_legend(order=2))
+
+all_Tsne_plots<-ggarrange(Tsne_Anonymous,Tsne_Symptoms,Tsne_Dosage_group,labels = c("A", "B","C"),ncol = 3, nrow = 1)
+
+##At reviewer's request split per time point
+Tsne_Anonymous_per_Timepoint<-plot_tsne_phyloseq(samples_rechhi,tsne_samples,color="PatientID")+geom_point(size=2.5)+xlab("t-SNE1")+ylab("t-SNE2")+scale_color_manual(values=c25)+labs(color="VolunteerID")+guides(color=guide_legend(order=2))+facet_wrap(~Timepoint)
+
+##Whatever the coloring is based on, a very strong individual-specific clustering remains.
+
+ggsave(file="H:/MyDocs/ReCHHI/Figures/all_Tsne_plots.svg", plot=all_Tsne_plots, width=20, height=7.5,dpi=1200)
+```
