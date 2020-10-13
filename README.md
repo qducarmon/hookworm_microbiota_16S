@@ -7,7 +7,6 @@ In case you'd prefer to start analyzing from the raw sequence data yourself, you
 ## Requirements
 - R version 3.6.1 ("Action of the Toes").
 - All packages and dependencies loaded in the different markdown scripts. 
-- 
 
 ## Worfklow
 - Start by loading the phyloseq objects in the "Data_preparation_cleaning.Rmd". These files serve as input for all further analyses. In addition, you need to download the hookworm_phyloseq.rds (this contains the phyloseq object)
