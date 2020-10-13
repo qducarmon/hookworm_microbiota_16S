@@ -1,0 +1,485 @@
+---
+title: "Metalonda"
+author: "QD"
+output: html_document
+---
+##Load packages
+```{r}
+library(MetaLonDA)
+library(cowplot)
+```
+
+##Test at genus level, first have to agglomerate taxa at the genus level (combine all with the same name, and remove all taxa without genus level assignment). Should be considered if taxa without genus level assignment should receive the family taxa instead of being completely removed.
+```{r}
+length(get_taxa_unique(samples_rechhi,taxonomic.rank="Rank6"))
+samples_rechhi_genus<-tax_glom(samples_rechhi,taxrank=rank_names(samples_rechhi)[6],NArm=F)
+samples_rechhi_genus<-phyloseq_rm_na_tax(samples_rechhi_genus)
+samples_rechhi_genus_wo_18<-subset_samples(samples_rechhi_genus,PatientID!="18")
+```
+##Prepare data files, filter on presence of a genus in at least 25% of samples with 1 read
+```{r}
+filter<-genefilter_sample(samples_rechhi_genus,filterfun_sample(function(x) x >=1),A = 0.25*nsamples(samples_rechhi_genus))
+filt_samples_rechhi<-prune_taxa(filter,samples_rechhi_genus)
+filt_rechhi_otus<-abundances(filt_samples_rechhi)
+filt_rechhi_otus<-as.matrix(filt_rechhi_otus)
+```
+##Prepare Metalonda input to compare the complaint groups
+```{r}
+metadata_samples_rechhi<-data.frame(phyloseq::sample_data(filt_samples_rechhi),check.names = FALSE)
+metadata_samples_rechhi$Time<-metadata_samples_rechhi$Timepoint
+metadata_samples_rechhi$Time<-gsub("week", "", metadata_samples_rechhi$Time)
+metadata_samples_rechhi$Time<-as.numeric(as.character(metadata_samples_rechhi$Time))
+metadata_samples_rechhi$GI_Symptoms<-as.factor(metadata_samples_rechhi$GI_Symptoms)
+metadata_samples_rechhi$PatientID<-as.factor(metadata_samples_rechhi$PatientID)
+metadata_samples_rechhi$timepoint.in.number<-as.numeric(metadata_samples_rechhi$timepoint.in.number)
+
+time.vec <-metadata_samples_rechhi$timepoint.in.number
+group.vec <-metadata_samples_rechhi$GI_Symptoms
+id.vec <-metadata_samples_rechhi$PatientID
+#Change OTU numbers to OTU names#
+taxonomy_test1<-filt_samples_rechhi@tax_table@.Data
+rownames(filt_rechhi_otus)<-taxonomy_test1[,6]
+OTU_table <-filt_rechhi_otus
+rownames(OTU_table)<-as.character(rownames(OTU_table))
+points=c(1,2,3,4,5,length.out=5)
+```
+##Metalonda execution
+```{r}
+setwd("I:/research/exp-mic/Ducarmon/Hookworm/Metalonda_Output/Metalonda_Genus") ##Important to setwd as metalonda will write the output to your working directory (in my case with ~100 genera created about 2G of data I believe). So make sure that either your working directory has sufficient space available, or change your working directory.
+output.all = metalondaAll(Count = OTU_table, Time = time.vec, Group = group.vec,ID = id.vec, n.perm =1000, fit.method = "nbinomial", num.intervals = 4,parall = FALSE, pvalue.threshold=0.05,adjust.method = "BH", time.unit = "Time_point",norm.method = "median_ratio", prefix = "Test", ylabel = "Read Counts", col = c("black","green"))
+```
+##Barnesiella was found. Visualize this one on relative abundance. First run the genus code in above blocks to get the correct fil_samples_rechhi df (so that the plots will correspond to the input for Metalonda).
+```{r}
+Metalonda_complaints_rel<-microbiome::transform(filt_samples_rechhi,"compositional")
+Metalonda_complaints_df<-psmelt(Metalonda_complaints_rel)
+Metalonda_complaints_df<-rename(Metalonda_complaints_df,c("Complaints"="GI_Symptoms"))
+Metalonda_complaints_df$GI_Symptoms<-revalue(Metalonda_complaints_df$GI_Symptoms,c("Heavy"="Hi","Light"="Lo"))
+Metalonda_complaints_Barnesiella<-subset(Metalonda_complaints_df,Rank6=="g__Barnesiella")
+
+Metalonda_complaints_Barnesiella<-ggplot(Metalonda_complaints_Barnesiella)+
+  aes(x=Timepoint,y=Abundance,group=GI_Symptoms,color=GI_Symptoms)+
+  geom_point()+
+  geom_smooth(method="loess", se=TRUE, fullrange=FALSE, level=0.95)+
+  scale_color_manual(values=c("orange", "blue"))+
+  ggtitle("Barnesiella")+
+  ylab("Relative abundance")+
+  theme(axis.text.x=element_text(size=8))+
+  theme(legend.title=element_text(size=10))+
+  theme(plot.title = element_text(face = "italic"))
+```
+##Also check Allisonella
+```{r}
+Metalonda_complaints_Allisonella<-subset(Metalonda_complaints_df,Rank6=="g__Allisonella")
+
+Metalonda_complaints_Allisonella<-ggplot(Metalonda_complaints_Allisonella)+
+  aes(x=Timepoint,y=Abundance,group=GI_Symptoms,color=GI_Symptoms)+
+  geom_point()+
+  geom_smooth(method="loess", se=TRUE, fullrange=FALSE, level=0.95)+
+  scale_color_manual(values=c("orange", "blue"))+
+  ggtitle("Allisonella")+
+  ylab("Relative abundance")+
+  theme(axis.text.x=element_text(size=8))+
+  theme(legend.title=element_text(size=10))+
+  theme(plot.title = element_text(face = "italic"))
+```
+##Bilophila
+```{r}
+Metalonda_complaints_Bilophila<-subset(Metalonda_complaints_df,Rank6=="g__Bilophila")
+
+Metalonda_complaints_Bilophila<-ggplot(Metalonda_complaints_Bilophila)+
+  aes(x=Timepoint,y=Abundance,group=GI_Symptoms,color=GI_Symptoms)+
+  geom_point()+
+  geom_smooth(method="loess", se=TRUE, fullrange=FALSE, level=0.95)+
+  scale_color_manual(values=c("orange", "blue"))+
+  ggtitle("Bilophila")+
+  ylab("Relative abundance")+
+  theme(axis.text.x=element_text(size=8))+
+  theme(legend.title=element_text(size=10))+
+  theme(plot.title = element_text(face = "italic"))
+```
+##Escherichia-Shigella
+```{r}
+Metalonda_complaints_Escherichia<-subset(Metalonda_complaints_df,Rank6=="g__Escherichia-Shigella")
+
+Metalonda_complaints_Escherichia<-ggplot(Metalonda_complaints_Escherichia)+
+  aes(x=Timepoint,y=Abundance,group=GI_Symptoms,color=GI_Symptoms)+
+  geom_point()+
+  geom_smooth(method="loess", se=TRUE, fullrange=FALSE, level=0.95)+
+  scale_color_manual(values=c("orange", "blue"))+
+  ggtitle("Escherichia-Shigella")+
+  ylab("Relative abundance")+
+  theme(axis.text.x=element_text(size=8))+
+  theme(legend.title=element_text(size=10))+
+  theme(plot.title = element_text(face = "italic"))
+```
+##Lachnospiraceae_ND3007_group
+```{r}
+Metalonda_complaints_Lachno<-subset(Metalonda_complaints_df,Rank6=="g__Lachnospiraceae_ND3007_group")
+
+Metalonda_complaints_Lachno<-ggplot(Metalonda_complaints_Lachno)+
+  aes(x=Timepoint,y=Abundance,group=GI_Symptoms,color=GI_Symptoms)+
+  geom_point()+
+  geom_smooth(method="loess", se=TRUE, fullrange=FALSE, level=0.95)+
+  scale_color_manual(values=c("orange", "blue"))+
+  ggtitle("Lachnospiraceae_ND3007_group")+
+  ylab("Relative abundance")+
+  theme(axis.text.x=element_text(size=8))+
+  theme(legend.title=element_text(size=10))+
+  theme(plot.title = element_text(face = "italic"))
+```
+## Just to make sure that all findisg are robust apart from the E-coli finding, run metalonda without volunteer 18 and inspect results. The filtering becomes a little bit different, since volunteer 18 is deleted (1 extra genus is filtered as compared to including 18).
+```{r}
+filter<-genefilter_sample(samples_rechhi_genus_wo_18,filterfun_sample(function(x) x >=1),A = 0.25*nsamples(samples_rechhi_genus_wo_18))
+filt_samples_rechhi_wo_18<-prune_taxa(filter,samples_rechhi_genus_wo_18)
+filt_rechhi_otus_wo_18<-abundances(filt_samples_rechhi_wo_18)
+filt_rechhi_otus_wo_18<-as.matrix(filt_rechhi_otus_wo_18)
+```
+##Prepare Metalonda input
+```{r}
+metadata_samples_rechhi_wo_18<-data.frame(phyloseq::sample_data(filt_samples_rechhi_wo_18),check.names = FALSE)
+metadata_samples_rechhi_wo_18$Time<-metadata_samples_rechhi_wo_18$Timepoint
+metadata_samples_rechhi_wo_18$Time<-gsub("week", "", metadata_samples_rechhi_wo_18$Time)
+metadata_samples_rechhi_wo_18$Time<-as.numeric(as.character(metadata_samples_rechhi_wo_18$Time))
+metadata_samples_rechhi_wo_18$GI_Symptoms<-as.factor(metadata_samples_rechhi_wo_18$GI_Symptoms)
+metadata_samples_rechhi_wo_18$PatientID<-as.factor(metadata_samples_rechhi_wo_18$PatientID)
+metadata_samples_rechhi_wo_18$timepoint.in.number<-as.numeric(metadata_samples_rechhi_wo_18$timepoint.in.number)
+time.vec <-metadata_samples_rechhi_wo_18$timepoint.in.number
+group.vec <-metadata_samples_rechhi_wo_18$GI_Symptoms
+id.vec <-metadata_samples_rechhi_wo_18$PatientID
+#Change OTU numbers to OTU names#
+taxonomy_test1<-filt_samples_rechhi_wo_18@tax_table@.Data
+rownames(filt_rechhi_otus_wo_18)<-taxonomy_test1[,6]
+OTU_table <-filt_rechhi_otus_wo_18
+rownames(OTU_table)<-as.character(rownames(OTU_table))
+points=c(1,2,3,4,5,length.out=5)
+```
+##Metalonda execution
+```{r}
+setwd("I:/research/exp-mic/Ducarmon/Hookworm/Metalonda_Output/Metalonda_Genus_Without_18")
+output.all = metalondaAll(Count = OTU_table, Time = time.vec, Group = group.vec,ID = id.vec, n.perm =1000, fit.method = "nbinomial", num.intervals = 4,parall = FALSE, pvalue.threshold=0.05,adjust.method = "BH", time.unit = "Time_point",norm.method = "median_ratio", prefix = "Test", ylabel = "Read Counts", col = c("black","green"))
+```
+
+
+##Below I also visualize Dorea, as significantly abundant between group A and C, so summary figure will be at the bottom of this markdown. You can find this result in the supplementary table with metalonda results.
+
+##Load Metalonda results so that can create the figure myself with time points etc. adapted
+```{r}
+metalonda_symptom_groups<-read.csv("Complaints_MetaLonDA_TimeIntervals.csv",header=TRUE, sep=",", as.is=TRUE)
+metalonda_symptom_groups$dominant<-as.factor(metalonda_symptom_groups$dominant)
+metalonda_symptom_groups$dominant<-plyr::revalue(metalonda_symptom_groups$dominant,c("Heavy"="More_GI_symptoms","Light"="Less_GI_symptoms"))
+metalonda_symptom_groups$start<-as.character(metalonda_symptom_groups$start)
+metalonda_symptom_groups$end<-as.character(metalonda_symptom_groups$end)
+metalonda_symptom_groups$start<-plyr::revalue(metalonda_symptom_groups$start,c("1"="week00","2"="week04","3"="week08","4"="week14"))
+metalonda_symptom_groups$end<-plyr::revalue(metalonda_symptom_groups$end,c("1"="week00","2"="week04","3"="week08","4"="week14","5"="week20"))
+metalonda_symptom_groups$feature<-gsub("g__","",metalonda_symptom_groups$feature)
+metalonda_symptom_groups<-rename(metalonda_symptom_groups,c("dominant"="Dominant"))
+metalonda_symptom_groups$feature<-fct_relevel(metalonda_symptom_groups$feature,"Lachnospiraceae_ND3007_group","Escherichia-Shigella","Bilophila","Barnesiella","Allisonella")
+metalonda_symptom_groups$Dominant<-plyr::revalue(metalonda_symptom_groups$Dominant,c("More_GI_symptoms"="Hi_GI_Symptoms","Less_GI_symptoms"="Lo_GI_Symptoms"))
+metalonda_symptom_groups$Dominant<-fct_relevel(metalonda_symptom_groups$Dominant,c("Lo_GI_Symptoms","Hi_GI_Symptoms"))
+
+Metalonda_Results<-ggplot(metalonda_symptom_groups)+
+  aes(ymin=start,ymax=end,x=feature,xend=feature)+
+  geom_linerange(aes(color=Dominant),size=1.2)+
+  coord_flip()+
+  scale_color_manual(values=c("orange", "blue"))+
+  theme(legend.position = "top",legend.text=element_text(size=12),legend.title=element_text(size=12))+
+  theme(axis.text.y=element_text(face="italic",size=11))+
+  theme(axis.text.x=element_text(size=11))+
+  theme(axis.title.x=element_text(size=12))+
+  theme(axis.title.y=element_text(size=12))+
+  xlab("Genus")+
+  ylab("Timepoint")
+
+ggsave(file="H:/MyDocs/ReCHHI/Figures/Fig5_Metalonda_Results.svg", plot=Metalonda_Results, width=9,height=7,dpi=1200)
+```
+
+##Run Metalonda at genus level per Group (A,B,C)
+```{r}
+filter<-genefilter_sample(samples_rechhi_genus,filterfun_sample(function(x) x >=1),A = 0.25*nsamples(samples_rechhi_genus))
+filt_samples_rechhi_genus<-prune_taxa(filter,samples_rechhi_genus) ##Now filter for group A and C.
+filt_genus_A_C<-subset_samples(filt_samples_rechhi_genus,Dosage_Group=="A"|Dosage_Group=="C")
+filt_genus_A_C_abun<-abundances(filt_genus_A_C)
+filt_genus_A_C_abun<-as.matrix(filt_genus_A_C_abun)
+```
+
+##Prepare Metalonda input for group A versus C
+```{r}
+metadata_samples_rechhi_genus<-data.frame(phyloseq::sample_data(filt_samples_rechhi_genus),check.names = FALSE)
+metadata_samples_rechhi_genus$Time<-metadata_samples_rechhi_genus$Timepoint
+metadata_samples_rechhi_genus$Time<-gsub("week", "", metadata_samples_rechhi_genus$Time)
+metadata_samples_rechhi_genus$Time<-as.numeric(as.character(metadata_samples_rechhi_genus$Time))
+metadata_samples_rechhi_genus$Dosage_Group<-as.factor(metadata_samples_rechhi_genus$Dosage_Group)
+metadata_samples_rechhi_genus$PatientID<-as.factor(metadata_samples_rechhi_genus$PatientID)
+metadata_samples_rechhi_genus$timepoint.in.number<-as.numeric(metadata_samples_rechhi_genus$timepoint.in.number)
+metadata_samples_rechhi_genus_A_C<-subset(metadata_samples_rechhi_genus,Dosage_Group=="A"|Dosage_Group=="C") ##Filter group A and C for metadata.
+metadata_samples_rechhi_genus_A_C<-droplevels(metadata_samples_rechhi_genus_A_C) ##Drop unused levels to prevent issues when running Metalonda
+
+time.vec <-metadata_samples_rechhi_genus_A_C$timepoint.in.number
+group.vec <-metadata_samples_rechhi_genus_A_C$Dosage_Group
+id.vec <-metadata_samples_rechhi_genus_A_C$PatientID
+time.vec
+group.vec
+id.vec
+#Change OTU numbers to OTU names#
+taxonomy_test1<-filt_genus_A_C@tax_table@.Data
+taxonomy_test1<-as.data.frame(taxonomy_test1)
+taxonomy_test1$fam_gen<-paste(taxonomy_test1$Rank5,taxonomy_test1$Rank6,sep="_")
+rownames(filt_genus_A_C_abun)<-taxonomy_test1$fam_gen
+OTU_table<-filt_genus_A_C_abun
+rownames(OTU_table)<-as.character(rownames(OTU_table))
+points=c(1,2,3,4,5,length.out=5)
+```
+
+##Metalonda execution, group A versus C
+```{r}
+setwd("I:/research/exp-mic/Ducarmon/Hookworm/Metalonda_Output/Metalonda_Genus_GroupA_C")
+output.all = metalondaAll(Count = OTU_table, Time = time.vec, Group = group.vec,ID = id.vec, n.perm =1000, fit.method = "nbinomial", num.intervals = 4,parall = FALSE, pvalue.threshold=0.05,adjust.method = "BH", time.unit = "Time_point",norm.method = "median_ratio", prefix = "Test", ylabel = "Read Counts", col = c("black","green"))
+```
+
+##1 differentially abundant genus, Dorea. So visualize this one
+```{r}
+Metalonda_complaints_df_A_C<-subset(Metalonda_complaints_df,Dosage_Group!="B")
+Metalonda_complaints_df_A_C_Dorea<-subset(Metalonda_complaints_df_A_C,Rank6=="g__Dorea")
+Metalonda_complaints_Dorea<-ggplot(Metalonda_complaints_df_A_C_Dorea)+
+  aes(x=Timepoint,y=Abundance,group=Dosage_Group,color=Dosage_Group)+
+  geom_point()+
+  geom_smooth(method="loess", se=TRUE, fullrange=FALSE, level=0.95)+
+  scale_color_manual(values=c("red", "green3"))+
+  ggtitle("Dorea")+
+  ylab("Relative abundance")+
+  theme(axis.text.x=element_text(size=8))+
+  theme(legend.title=element_text(size=10))+
+  theme(plot.title = element_text(face = "italic"))
+```
+
+##Visualize all longitudinal relative abundance plots
+```{r}
+## Combine all the relative abundance plots
+all_relative_abundance<-ggarrange(Metalonda_complaints_Dorea,Metalonda_complaints_Allisonella,Metalonda_complaints_Barnesiella,Metalonda_complaints_Bilophila,Metalonda_complaints_Escherichia,Metalonda_complaints_Lachno,labels = c("A", "B","C","D","E","F"),ncol = 3, nrow = 2)
+
+ggsave(file="H:/MyDocs/ReCHHI/Figures/Longitudinal_abundance.svg", plot=all_relative_abundance, width=13, height=8)
+```
+
+
+#Do the same analyses at OTU/ASV level.
+```{r}
+filter<-genefilter_sample(samples_rechhi,filterfun_sample(function(x) x >=1),A = 0.25*nsamples(samples_rechhi))
+samples_25<-prune_taxa(filter,samples_rechhi)
+samples_25_otus<-abundances(samples_25)
+samples_25_otus<-as.matrix(samples_25_otus)
+```
+##Prepare Metalonda input to compare the complaint groups
+```{r}
+metadata_samples_rechhi<-data.frame(phyloseq::sample_data(samples_25),check.names = FALSE)
+metadata_samples_rechhi$Time<-metadata_samples_rechhi$Timepoint
+metadata_samples_rechhi$Time<-gsub("week", "", metadata_samples_rechhi$Time)
+metadata_samples_rechhi$Time<-as.numeric(as.character(metadata_samples_rechhi$Time))
+metadata_samples_rechhi$Complaints<-as.factor(metadata_samples_rechhi$Complaints)
+metadata_samples_rechhi$PatientID<-as.factor(metadata_samples_rechhi$PatientID)
+metadata_samples_rechhi$timepoint.in.number<-as.numeric(metadata_samples_rechhi$timepoint.in.number)
+
+time.vec <-metadata_samples_rechhi$timepoint.in.number
+group.vec <-metadata_samples_rechhi$Complaints
+id.vec <-metadata_samples_rechhi$PatientID
+#Keep OTU numbers in this case, as higher-level taxonomy may become problematic for numbers assigned the same taxonomy
+#taxonomy_test1<-samples_25i@tax_table@.Data. Keep this line to invest potentially significant findings.
+OTU_table <-samples_25_otus
+rownames(OTU_table)<-as.character(rownames(OTU_table))
+points=c(1,2,3,4,5,length.out=5)
+```
+##Metalonda execution
+```{r}
+setwd("I:/research/exp-mic/Ducarmon/Hookworm/Metalonda_Output/Metalonda_OTU/Complaint_Groups") 
+output.all = metalondaAll(Count = OTU_table, Time = time.vec, Group = group.vec,ID = id.vec, n.perm =1000, fit.method = "nbinomial", num.intervals = 4,parall = FALSE, pvalue.threshold=0.05,adjust.method = "BH", time.unit = "Time_point",norm.method = "median_ratio", prefix = "Test", ylabel = "Read Counts", col = c("black","green"))
+```
+
+## Visualize OTU results for symptom groups
+```{r}
+metalonda_symptom_groups_OTU<-read.csv("Complaints_MetaLonDA_OTU.csv",header=TRUE, sep=",", as.is=TRUE)
+metalonda_symptom_groups_OTU$dominant<-as.factor(metalonda_symptom_groups_OTU$dominant)
+metalonda_symptom_groups_OTU$dominant<-plyr::revalue(metalonda_symptom_groups_OTU$dominant,c("Heavy"="More_GI_symptoms","Light"="Less_GI_symptoms"))
+metalonda_symptom_groups_OTU$start<-as.character(metalonda_symptom_groups_OTU$start)
+metalonda_symptom_groups_OTU$end<-as.character(metalonda_symptom_groups_OTU$end)
+metalonda_symptom_groups_OTU$start<-plyr::revalue(metalonda_symptom_groups_OTU$start,c("1"="week00","2"="week04","3"="week08","4"="week14"))
+metalonda_symptom_groups_OTU$end<-plyr::revalue(metalonda_symptom_groups_OTU$end,c("1"="week00","2"="week04","3"="week08","4"="week14","5"="week20"))
+metalonda_symptom_groups_OTU$feature<-gsub("g__","",metalonda_symptom_groups_OTU$feature)
+metalonda_symptom_groups_OTU<-rename(metalonda_symptom_groups_OTU,c("dominant"="Dominant"))
+metalonda_symptom_groups_OTU$Dominant<-plyr::revalue(metalonda_symptom_groups_OTU$Dominant,c("More_GI_symptoms"="Hi_GI_Symptoms","Less_GI_symptoms"="Lo_GI_Symptoms"))
+metalonda_symptom_groups_OTU$Dominant<-fct_relevel(metalonda_symptom_groups_OTU$Dominant,c("Lo_GI_Symptoms","Hi_GI_Symptoms"))
+##Have to look up the taxonomy of the respective OTU numbers, find the deepest taxonomic assignment
+samples_25_long<-psmelt(samples_25)
+significant_OTUs<-unique(metalonda_symptom_groups_OTU$feature)
+metalonda_symptom_groups_OTU_significant<-subset(samples_25_long,OTU==c("72342654","723426202","723426230","723426350","723426362","723426989",  "7234265637","7234266068"))
+## 72342654=Blautia,723426202=Lachnospiraceae_ND3007_group,	723426230=Lachnospiraceae_UCG-004,723426350=Bacteroides,723426362=Lachnospiraceae_UCG-004,7234265637=Bacteroides,7234266068=Bacteroides,723426989=Atopobiaceae.
+metalonda_symptom_groups_OTU$feature<-plyr::revalue(metalonda_symptom_groups_OTU$feature,c("72342654"="Blautia_72342654","723426202"="Lachnospiraceae_ND3007_group_723426202","723426230"="Lachnospiraceae_UCG-004_723426230","723426350"="Bacteroides_723426350","723426362"="Lachnospiraceae_UCG-004_723426362","7234265637"="Bacteroides_7234265637","7234266068"="Bacteroides_7234266068","723426989"="Atopobiaceae_723426989"))
+metalonda_symptom_groups_OTU$feature<-fct_relevel(metalonda_symptom_groups_OTU$feature,"Lachnospiraceae_ND3007_group","Escherichia-Shigella","Bilophila","Barnesiella","Allisonella")
+metalonda_symptom_groups_OTU$feature<-as.factor(metalonda_symptom_groups_OTU$feature)
+
+Metalonda_Results_OTU_Symptom<-ggplot(metalonda_symptom_groups_OTU)+
+  aes(ymin=start,ymax=end,x=reorder(feature, desc(feature)),xend=feature)+ ##Reorder x to have alphabetical order on the y-axis in the end in the figure. A nice hack compared to some previous code where I reorder all the factors, but this is much quicker!
+  geom_linerange(aes(color=Dominant),size=1.2)+
+  coord_flip()+
+  scale_color_manual(values=c("blue"))+
+  theme(legend.position = "top",legend.text=element_text(size=12),legend.title=element_text(size=12))+
+  theme(axis.text.y=element_text(face="italic",size=10))+
+  theme(axis.text.x=element_text(size=10))+
+  theme(axis.title.x=element_text(size=12))+
+  theme(axis.title.y=element_text(size=12))+
+  xlab("OTU")+
+  ylab("Timepoint")
+
+ggsave(file="I:/mm-research/CMAT/Studies/ReCHHI1_20180003/ReCHHI1_Manuscript_Gut_Microbes/Second_Revision/Figures_Tables/Possible_Supplementary_Metalonda_OTU/Metalonda_Results_OTU_Symptom.svg", plot=Metalonda_Results_OTU_Symptom, width=9,height=7,dpi=1200)
+```
+
+
+## Now without volunteer 18 to see if effects are consistent despite the strong post-antibiotic effect of this volunteer. First throw out this volunteer from the phyloseq
+```{r}
+samples_25_wo_18<-subset_samples(samples_25,PatientID!="18")
+samples_25_wo_18_otus<-abundances(samples_25_wo_18)
+samples_25_wo_18_otus<-as.matrix(samples_25_wo_18_otus)
+```
+
+## Prepare all data for input
+```{r}
+metadata_samples_rechhi<-data.frame(phyloseq::sample_data(samples_25_wo_18),check.names = FALSE)
+metadata_samples_rechhi$Time<-metadata_samples_rechhi$Timepoint
+metadata_samples_rechhi$Time<-gsub("week", "", metadata_samples_rechhi$Time)
+metadata_samples_rechhi$Time<-as.numeric(as.character(metadata_samples_rechhi$Time))
+metadata_samples_rechhi$Complaints<-as.factor(metadata_samples_rechhi$Complaints)
+metadata_samples_rechhi$PatientID<-as.factor(metadata_samples_rechhi$PatientID)
+metadata_samples_rechhi$timepoint.in.number<-as.numeric(metadata_samples_rechhi$timepoint.in.number)
+
+time.vec <-metadata_samples_rechhi$timepoint.in.number
+group.vec <-metadata_samples_rechhi$Complaints
+id.vec <-metadata_samples_rechhi$PatientID
+#Keep OTU numbers in this case, as higher-level taxonomy may become problematic for numbers assigned the same taxonomy
+#taxonomy_test1<-samples_25i@tax_table@.Data. Keep this line to invest potentially significant findings.
+OTU_table <-samples_25_wo_18_otus
+rownames(OTU_table)<-as.character(rownames(OTU_table))
+points=c(1,2,3,4,5,length.out=5)
+```
+
+## Metalonda execution at OTU level without volunteer 18
+```{r}
+setwd("I:/research/exp-mic/Ducarmon/Hookworm/Metalonda_Output/Metalonda_OTU/Complaint_Groups_without_18") 
+output.all = metalondaAll(Count = OTU_table, Time = time.vec, Group = group.vec,ID = id.vec, n.perm =1000, fit.method = "nbinomial", num.intervals = 4,parall = FALSE, pvalue.threshold=0.05,adjust.method = "BH", time.unit = "Time_point",norm.method = "median_ratio", prefix = "Test", ylabel = "Read Counts", col = c("black","green"))
+```
+## Visualize the results without volunteer 18
+```{r}
+metalonda_symptom_groups_OTU_wo_18<-read.csv("Complaints_MetaLonDA_OTU_wo_18.csv",header=TRUE, sep=",", as.is=TRUE)
+metalonda_symptom_groups_OTU_wo_18$dominant<-as.factor(metalonda_symptom_groups_OTU_wo_18$dominant)
+metalonda_symptom_groups_OTU_wo_18$dominant<-plyr::revalue(metalonda_symptom_groups_OTU_wo_18$dominant,c("Heavy"="More_GI_symptoms","Light"="Less_GI_symptoms"))
+metalonda_symptom_groups_OTU_wo_18$start<-as.character(metalonda_symptom_groups_OTU_wo_18$start)
+metalonda_symptom_groups_OTU_wo_18$end<-as.character(metalonda_symptom_groups_OTU_wo_18$end)
+metalonda_symptom_groups_OTU_wo_18$start<-plyr::revalue(metalonda_symptom_groups_OTU_wo_18$start,c("1"="week00","2"="week04","3"="week08","4"="week14"))
+metalonda_symptom_groups_OTU_wo_18$end<-plyr::revalue(metalonda_symptom_groups_OTU_wo_18$end,c("1"="week00","2"="week04","3"="week08","4"="week14","5"="week20"))
+metalonda_symptom_groups_OTU_wo_18$feature<-gsub("g__","",metalonda_symptom_groups_OTU_wo_18$feature)
+metalonda_symptom_groups_OTU_wo_18<-rename(metalonda_symptom_groups_OTU_wo_18,c("dominant"="Dominant"))
+metalonda_symptom_groups_OTU_wo_18$Dominant<-plyr::revalue(metalonda_symptom_groups_OTU_wo_18$Dominant,c("More_GI_symptoms"="Hi_GI_Symptoms","Less_GI_symptoms"="Lo_GI_Symptoms"))
+metalonda_symptom_groups_OTU_wo_18$Dominant<-fct_relevel(metalonda_symptom_groups_OTU_wo_18$Dominant,c("Lo_GI_Symptoms","Hi_GI_Symptoms"))
+
+##Have to look up the taxonomy of the respective OTU numbers, find the deepest taxonomic assignment
+significant_OTUs<-unique(metalonda_symptom_groups_OTU_wo_18$feature)
+metalonda_symptom_groups_OTU_wo_18_significant<-subset(samples_25_long,OTU==c("72342613","72342635","72342654","723426128","723426140","723426202","723426230","723426289","723426316","723426350","723426362","723426450","723426451","7234263270","7234263552"))
+
+## "72342613"="Lachnospiraceae_ND3007_group_72342613","72342635"="Faecalibacterium_72342635","72342654"="Blautia_72342654","723426128"="Lachnospiraceae_ND3007_group_723426128","723426140"="Lachnospiraceae_ND3007_group_723426140","723426202"="Lachnospiraceae_ND3007_group_723426202","723426230"="Lachnospiraceae_UCG-004_723426230","723426289"="Lachnospira_723426289","723426316"="Lachnospiraceae_ND3007_group_723426316","723426350"="Bacteroides_723426350","723426362"="Lachnospiraceae_UCG-004_723426362","723426450"="Allisonella_723426450","723426451"="Faecalibacterium_723426451","7234263270"="Oscillibacter_7234263270","7234263552"="Agathobacter_7234263552"
+metalonda_symptom_groups_OTU_wo_18$feature<-plyr::revalue(metalonda_symptom_groups_OTU_wo_18$feature,c("72342613"="Lachnospiraceae_ND3007_group_72342613","72342635"="Faecalibacterium_72342635","72342654"="Blautia_72342654","723426128"="Lachnospiraceae_ND3007_group_723426128","723426140"="Lachnospiraceae_ND3007_group_723426140","723426202"="Lachnospiraceae_ND3007_group_723426202","723426230"="Lachnospiraceae_UCG-004_723426230","723426289"="Lachnospira_723426289","723426316"="Lachnospiraceae_ND3007_group_723426316","723426350"="Bacteroides_723426350","723426362"="Lachnospiraceae_UCG-004_723426362","723426450"="Allisonella_723426450","723426451"="Faecalibacterium_723426451","7234263270"="Oscillibacter_7234263270","7234263552"="Agathobacter_7234263552"))
+metalonda_symptom_groups_OTU_wo_18$feature<-as.factor(metalonda_symptom_groups_OTU_wo_18$feature)
+
+Metalonda_Results_OTU_Symptom_wo_18<-ggplot(metalonda_symptom_groups_OTU_wo_18)+
+  aes(ymin=start,ymax=end,x=reorder(feature, desc(feature)),xend=feature)+ ##Reorder x to have alphabetical order on the y-axis in the end in the figure. A nice hack compared to some previous code where I reorder all the factors, but this is much quicker!
+  geom_linerange(aes(color=Dominant),size=1.2)+
+  coord_flip()+
+  scale_color_manual(values=c("orange", "blue"))+
+  theme(legend.position = "top",legend.text=element_text(size=12),legend.title=element_text(size=12))+
+  theme(axis.text.y=element_text(face="italic",size=10))+
+  theme(axis.text.x=element_text(size=10))+
+  theme(axis.title.x=element_text(size=12))+
+  theme(axis.title.y=element_text(size=12))+
+  xlab("OTU")+
+  ylab("Timepoint")
+
+ggsave(file="I:/mm-research/CMAT/Studies/ReCHHI1_20180003/ReCHHI1_Manuscript_Gut_Microbes/Second_Revision/Figures_Tables/Possible_Supplementary_Metalonda_OTU/Metalonda_Results_OTU_Symptom_wo_18.svg", plot=Metalonda_Results_OTU_Symptom_wo_18, width=9,height=7,dpi=1200)
+```
+
+
+
+## Now group A (dosage groups) versus group C
+```{r}
+ ##filter for group A and C.
+samples_25_A_C<-subset_samples(samples_25,Group=="A"|Group=="C")
+samples_25_A_C_abun<-abundances(samples_25_A_C)
+samples_25_A_C_abun<-as.matrix(samples_25_A_C_abun)
+```
+
+##Prepare Metalonda input for group A versus C
+```{r}
+metadata_samples_25_A_C<-data.frame(phyloseq::sample_data(samples_25_A_C),check.names = FALSE)
+metadata_samples_25_A_C$Time<-metadata_samples_25_A_C$Timepoint
+metadata_samples_25_A_C$Time<-gsub("week", "", metadata_samples_25_A_C$Time)
+metadata_samples_25_A_C$Time<-as.numeric(as.character(metadata_samples_25_A_C$Time))
+metadata_samples_25_A_C$Dosage_Group<-as.factor(metadata_samples_25_A_C$Group)
+metadata_samples_25_A_C$PatientID<-as.factor(metadata_samples_25_A_C$PatientID)
+metadata_samples_25_A_C$timepoint.in.number<-as.numeric(metadata_samples_25_A_C$timepoint.in.number)
+metadata_samples_25_A_C<-subset(metadata_samples_25_A_C,Group=="A"|Group=="C") ##Filter group A and C for metadata.
+metadata_samples_25_A_C<-droplevels(metadata_samples_25_A_C) ##Drop unused levels to prevent issues when running Metalonda
+
+time.vec <-metadata_samples_25_A_C$timepoint.in.number
+group.vec <-metadata_samples_25_A_C$Group
+id.vec <-metadata_samples_25_A_C$PatientID
+time.vec
+group.vec
+id.vec
+#Change OTU numbers to OTU names#
+OTU_table<-samples_25_A_C_abun
+rownames(OTU_table)<-as.character(rownames(OTU_table))
+points=c(1,2,3,4,5,length.out=5)
+```
+
+##Metalonda execution, group A versus C. Unfortunately with 1000 permutations and this amount of OTUs(657), the model cannot be executed correctly, most likely due to too many variables and too few data points. So attempt this with 500 permutations instead.
+```{r}
+setwd("I:/research/exp-mic/Ducarmon/Hookworm/Metalonda_Output/Metalonda_OTU/Groups_A_C")
+output.all = metalondaAll(Count = OTU_table, Time = time.vec, Group = group.vec,ID = id.vec, n.perm =1000, fit.method = "nbinomial", num.intervals = 4,parall = FALSE, pvalue.threshold=0.05,adjust.method = "BH", time.unit = "Time_point",norm.method = "median_ratio", prefix = "Test", ylabel = "Read Counts", col = c("black","green"))
+```
+
+## Visualize group A versus C
+```{r}
+metalonda_dosage_groups_OTU<-read.csv("MetaLonDA_OTU_Group_A_C.csv",header=TRUE, sep=",", as.is=TRUE)
+metalonda_dosage_groups_OTU$dominant<-as.factor(metalonda_dosage_groups_OTU$dominant)
+metalonda_dosage_groups_OTU$start<-as.character(metalonda_dosage_groups_OTU$start)
+metalonda_dosage_groups_OTU$end<-as.character(metalonda_dosage_groups_OTU$end)
+metalonda_dosage_groups_OTU$start<-plyr::revalue(metalonda_dosage_groups_OTU$start,c("1"="week00","2"="week04","3"="week08","4"="week14"))
+metalonda_dosage_groups_OTU$end<-plyr::revalue(metalonda_dosage_groups_OTU$end,c("1"="week00","2"="week04","3"="week08","4"="week14","5"="week20"))
+metalonda_dosage_groups_OTU$feature<-gsub("g__","",metalonda_dosage_groups_OTU$feature)
+metalonda_dosage_groups_OTU<-rename(metalonda_dosage_groups_OTU,c("dominant"="Dominant"))
+
+##Have to look up the taxonomy of the respective OTU numbers, find the deepest taxonomic assignment
+significant_OTUs<-unique(metalonda_dosage_groups_OTU$feature)
+metalonda_dosage_groups_OTU_significant<-subset(samples_25_long,OTU==c("72342670","723426341","723426977"))
+
+## "72342670"="Dorea_72342670","723426341"="Butyricimonas_723426341","723426977"="Faecalibacterium_723426977"
+metalonda_dosage_groups_OTU$feature<-plyr::revalue(metalonda_dosage_groups_OTU$feature,c("72342670"="Dorea_72342670","723426341"="Butyricimonas_723426341","723426977"="Faecalibacterium_723426977"))
+metalonda_dosage_groups_OTU$feature<-as.factor(metalonda_dosage_groups_OTU$feature)
+
+Metalonda_Results_OTU_Groups_A_C<-ggplot(metalonda_dosage_groups_OTU)+
+  aes(ymin=start,ymax=end,x=reorder(feature, desc(feature)),xend=feature)+ ##Reorder x to have alphabetical order on the y-axis in the end in the figure. A nice hack compared to some previous code where I reorder all the factors, but this is much quicker!
+  geom_linerange(aes(color=Dominant),size=1.2)+
+  coord_flip()+
+  scale_color_manual(values=c("red", "green3"))+
+  theme(legend.position = "top",legend.text=element_text(size=12),legend.title=element_text(size=12))+
+  theme(axis.text.y=element_text(face="italic",size=10))+
+  theme(axis.text.x=element_text(size=10))+
+  theme(axis.title.x=element_text(size=12))+
+  theme(axis.title.y=element_text(size=12))+
+  xlab("OTU")+
+  ylab("Timepoint")
+
+ggsave(file="I:/mm-research/CMAT/Studies/ReCHHI1_20180003/ReCHHI1_Manuscript_Gut_Microbes/Second_Revision/Figures_Tables/Possible_Supplementary_Metalonda_OTU/Metalonda_Results_OTU_Groups_A_C.svg", plot=Metalonda_Results_OTU_Groups_A_C, width=9,height=7,dpi=1200)
+```
+
+## Combine the 3 figures from Metalonda at OTU level to make a supplementary figure
+```{r}
+combined_Metalonda_OTU<-plot_grid(Metalonda_Results_OTU_Groups_A_C,Metalonda_Results_OTU_Symptom,Metalonda_Results_OTU_Symptom_wo_18,labels = c("A", "B", "C","D"),align="hv",axis="tblr")
+ggsave(file="I:/mm-research/CMAT/Studies/ReCHHI1_20180003/ReCHHI1_Manuscript_Gut_Microbes/Second_Revision/Figures_Tables/FigS4_Metalonda_OTU.svg",plot=combined_Metalonda_OTU, width=12,height=8)
+```
+
