@@ -1,0 +1,47 @@
+---
+title: "RECHHI data prep and cleaning"
+author: "QD"
+output: html_document
+---
+##Load libraries
+```{r}
+library(phyloseq)
+library(vegan)
+library(DESeq2)
+library(reshape2)
+library(microbiome)
+library(tsnemicrobiota)
+library(tidyverse)
+library(ggpubr)
+library(plyr)
+library(gdata)
+library(RColorBrewer)
+library(randomcoloR)
+library(lme4)
+library(lmerTest)
+library(metagMisc)
+```
+##Load the phyloseq object!
+```{r}
+rechhi_phyloseq<-readRDS("hookworm_phyloseq.rds")
+metadata_rechhi<-meta(rechhi_phyloseq)
+```
+##Some general information on baseline charachteristics of e.g. gender. A 0 encodes male, 1 encodes female
+```{r}
+##Select only 1 sample of each volunteer to avoid mistakes in calaculations due to 5 samples/volunteer
+metad_volunteers<-subset(metadata_rechhi,Timepoint=="week00")
+xtabs(~Gender,data=metad_volunteers) ## 8 (40%) are male, 12 (60%) are female.
+mean(metad_volunteers$Age..week00.)
+sd(metad_volunteers$Age..week00.)
+```
+##Several phyloseq objects made here which are convenient for later analyses
+```{r}
+samples_rechhi<-subset_samples(rechhi_phyloseq,Group!="Negative_Control")
+samples_rechhi<-subset_samples(samples_rechhi,Group!="Positive_Control")
+samples_rechhi_genus<-tax_glom(samples_rechhi,taxrank=rank_names(samples_rechhi)[6],NArm=F)
+samples_rechhi_genus<-phyloseq_rm_na_tax(samples_rechhi_genus)
+samples_rechhi_genus_only<-tax_glom(samples_rechhi,taxrank=rank_names(samples_rechhi)[6],NArm=TRUE,bad_empty=c("","g__","g__<empty>"))
+samples_rechhi_genus_only<-phyloseq_rm_na_tax(samples_rechhi_genus_only)
+samples_rechhi_rel <- microbiome::transform(samples_rechhi, "compositional")
+rechhi_phyloseq_rel <-samples_rechhi_rel
+```
