@@ -1,0 +1,39 @@
+---
+title: "Compositional_Profiles"
+author: "QD"
+output: html_document
+---
+##Compositional plots at family level at all time points
+```{r}
+samples_recchi_rel_toptaxa_all_timepoints<-aggregate_top_taxa(samples_rechhi_rel,16,"Rank5") ##Rank5 equals family level.
+##Just as a note, the colors work quite well when top 15/16 is selected as in code above.
+df_all_timepoints<-psmelt(samples_recchi_rel_toptaxa_all_timepoints)
+df_all_timepoints$Timepoint<-as.factor(df_all_timepoints$Timepoint)
+df_all_timepoints<-plyr::rename(df_all_timepoints,c("OTU"="Family"))
+df_all_timepoints$Family<-gsub("f__","",df_all_timepoints$Family)
+df_all_timepoints$Family<-as.factor(df_all_timepoints$Family)
+levels(df_all_timepoints$Family)[1]<-"Not_Available"
+df_all_timepoints$Family<-fct_relevel(df_all_timepoints$Family,"Not_Available",after=Inf)
+df_all_timepoints$Family<-fct_relevel(df_all_timepoints$Family,"Other",after=Inf)
+
+manualcolors<-c('black','forestgreen', 'red2', 'orange', 'cornflowerblue', 
+                'magenta', 'darkolivegreen4',  
+                'indianred1', 'darkblue', 
+                'mediumorchid1','firebrick4',  'yellowgreen', 'tan3',
+                "tan1",'darkgray', 'wheat4', '#DDAD4B',
+                'moccasin', 'mediumvioletred', 'seagreen','cadetblue1',
+                "darkolivegreen1","tan2","tomato3" )
+
+df_all_timepoints$Complaints<-plyr::revalue(df_all_timepoints$Complaints,c("Heavy"="Hi","Light"="Lo"))
+
+comp_family<-ggplot(df_all_timepoints)+
+  aes(x=Timepoint,y=Abundance,fill=Family,color=Family)+
+  geom_bar(stat="identity",colour=NA)+ ##Removing the borders around the colors makes for a more attractive figure (in my opinion) and better interpretability for the lower abundant families.
+  scale_fill_manual(values=manualcolors)+
+  theme(axis.text.x = element_text(angle=45,hjust=1))+
+  theme(legend.text = element_text(face = "italic"))+
+  facet_wrap(Complaints~PatientID)+
+  ylab("Relative abundance")
+
+ggsave(file="H:/MyDocs/ReCHHI/Figures/FigS2_Compositional_Family.svg",plot=comp_family, width=10,height=8)
+```
