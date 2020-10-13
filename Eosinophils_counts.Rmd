@@ -1,0 +1,27 @@
+---
+title: "Eosinophils_counts"
+author: "QD"
+output: html_document
+---
+```{r}
+library(rstatix)
+```
+
+
+## Upon request, plot eosinophil counts per complaint group per time point. 
+```{r}
+metadata_samples<-meta(samples_rechhi)
+metadata_samples$Complaints<-plyr::revalue(metadata_samples$Complaints,c("Heavy"="Hi","Light"="Lo"))##Rename complaint groups
+metadata_samples<-dplyr::rename(metadata_samples,GI_Symptoms=Complaints)
+
+eosinophil_dot_plot<-ggplot(metadata_samples)+
+  aes(x=GI_Symptoms,y=Eosinophil.count)+
+  geom_point(aes(color=GI_Symptoms))+
+  scale_color_manual(values=c("orange", "blue"))+
+  ylab("Eosinophil_Count (*10^9/L)")+
+  xlab("")+
+  facet_wrap(~Timepoint,scales="free_y")
+
+ggsave(file="I:/mm-research/CMAT/Studies/ReCHHI1_20180003/ReCHHI1_Manuscript_Gut_Microbes/Second_Revision/Figures_Tables/FigS5_Eosinophil_dot_plot.svg", plot=eosinophil_dot_plot, width=9,height=7,dpi=1200)
+```
+
