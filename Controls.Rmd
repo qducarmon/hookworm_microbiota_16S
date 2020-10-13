@@ -1,0 +1,103 @@
+---
+title: "Controls"
+author: "QD"
+output: html_document
+---
+##Richness positive controls
+```{r}
+pos_controls_rechhi<-subset_samples(rechhi_phyloseq,Group=="Positive_Control")
+metadata_controls_rechhi<-microbiome::meta(pos_controls_rechhi)
+diversities_controls_rechhi<-estimate_richness(pos_controls_rechhi)
+diversities_controls_rechhi$SampleID<-rownames(diversities_controls_rechhi)
+diversities_controls_rechhi$SampleID<-gsub("X103540.001.","103540-001-",diversities_controls_rechhi$SampleID)
+metadata_controls_rechhi$SampleID<-rownames(metadata_controls_rechhi)
+metad_divers_controls_rechhi<-merge(metadata_controls_rechhi,diversities_controls_rechhi, by = "SampleID")
+```
+## Relative abundance positive controls. Select, at genera level, the 8 genera which should be in there (Pseudomonas, Escherichia-Shigella, Staphylococcus, Salmonella, Bacillus, Enterococcus, Listeria and Lactobacillus). Also, add the theoretical values of the Zymo mock community to each relevant genus
+```{r}
+pos_controls_rechhi_rel <- microbiome::transform(pos_controls_rechhi, "compositional")
+pos_controls_rechhi_rel_8_genera<-subset_taxa(pos_controls_rechhi_rel,Rank6=="g__Listeria"|Rank6=="g__Enterococcus"|Rank6=="g__Pseudomonas"|Rank6=="g__Bacillus"|Rank6=="g__Salmonella"|Rank6=="g__Staphylococcus"|Rank6=="g__Lactobacillus"|Rank6=="g__Escherichia-Shigella")
+pos_controls_rechhi_rel_8_genera_abundances<-abundances(pos_controls_rechhi_rel_8_genera)
+genera_8_tax_names<-pos_controls_rechhi_rel_8_genera@tax_table@.Data[,6]
+rownames(pos_controls_rechhi_rel_8_genera_abundances)<-genera_8_tax_names
+rel_8_genera_abundances<-t(pos_controls_rechhi_rel_8_genera_abundances)
+rel_8_genera_abundances<-as.data.frame(rel_8_genera_abundances)
+rel_8_genera_abundances$Other<-1-apply(rel_8_genera_abundances,1,sum)
+rel_8_genera_abundances<-t(rel_8_genera_abundances)
+rel_8_genera_abundances<-as.data.frame(rel_8_genera_abundances)
+rownames(rel_8_genera_abundances)
+theoretical_composition_values<-c(0.101,0.184,0,0.155,0,0,0.104,0.174,0,0.042,0.099,0.141,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0) ## A bit of a clumsy way to indicate the theoretical values, but I couldn't think of a better way.
+rel_8_genera_abundances$Theoretical<-theoretical_composition_values
+rel_8_genera_abundances$Genus<-rownames(rel_8_genera_abundances)
+rel_8_genera_abundances<-rename(rel_8_genera_abundances,c("103540-001-058"="DNA 1","103540-001-116"="DNA 2","103540-001-024"="Mock 1","103540-001-073"="Mock 2","103540-001-115"="Mock 3"))
+
+rel_8_genera_abundances_long<-melt(rel_8_genera_abundances)
+rel_8_genera_abundances_long$Genus<-gsub(".1","",rel_8_genera_abundances_long$Genus)
+rel_8_genera_abundances_long$Genus<-gsub(".2","",rel_8_genera_abundances_long$Genus)
+rel_8_genera_abundances_long$Genus<-gsub(".3","",rel_8_genera_abundances_long$Genus)
+rel_8_genera_abundances_long$Genus<-gsub(".4","",rel_8_genera_abundances_long$Genus)
+rel_8_genera_abundances_long$Genus<-gsub(".5","",rel_8_genera_abundances_long$Genus)
+rel_8_genera_abundances_long$Genus<-gsub(".6","",rel_8_genera_abundances_long$Genus)
+rel_8_genera_abundances_long$Genus<-gsub(".7","",rel_8_genera_abundances_long$Genus)
+rel_8_genera_abundances_long$Genus<-gsub(".8","",rel_8_genera_abundances_long$Genus)
+
+rel_8_genera_abundances_long$variable<-factor(rel_8_genera_abundances_long$variable,levels=c("Theoretical","DNA 1","DNA 2","Mock 1","Mock 2","Mock 3"))
+
+n <- 9
+palette <- distinctColorPalette(n)
+colourCount <- length(unique(rel_8_genera_abundances_long$Genus))
+getPalette <- colorRampPalette(brewer.pal(12, "Paired"))
+str(rel_8_genera_abundances_long)
+
+rel_8_genera_abundances_long$Genus<-gsub("g__","",rel_8_genera_abundances_long$Genus)
+rel_8_genera_abundances_long$Genus<-as.factor(rel_8_genera_abundances_long$Genus)
+rel_8_genera_abundances_long$Genus<-fct_relevel(rel_8_genera_abundances_long$Genus,"Other",after=Inf)
+levels(rel_8_genera_abundances_long$Genus)
+
+pos_controls<-ggplot(rel_8_genera_abundances_long)+
+  aes(x=variable,y=value,fill=Genus)+
+  geom_bar(stat="identity")+
+  scale_fill_manual(values = getPalette(colourCount))+
+  theme(text = element_text(size=14))+
+  theme(axis.text.x = element_text(angle = 45, vjust = 1,size = 9, hjust = 1))+
+  theme(legend.text = element_text(face = "italic",size=12))+
+  xlab("Sample")+
+  ylab("Relative abundance")
+
+ggsave(file="H:/MyDocs/ReCHHI/Figures/Positive_controls.svg",plot=pos_controls, width=12,height=8)
+```
+## Make a heatmap to illustrate the BC distances. This can be done by using the same matrix as used to make the compositional plots
+```{r}
+controls_rechhi_genus<-tax_glom(pos_controls_rechhi,taxrank=rank_names(pos_controls_rechhi)[6],NArm=F)
+pos_controls<-aggregate_top_taxa(controls_rechhi_genus,8,"Rank6")
+pos_controls_rel <- microbiome::transform(pos_controls, "compositional")
+genera_abun<-as.data.frame(abundances(pos_controls_rel))
+genera_abun<-rename(genera_abun,c("103540-001-058"="DNA 1","103540-001-116"="DNA 2","103540-001-024"="Mock 1","103540-001-073"="Mock 2","103540-001-115"="Mock 3"))
+genera_abun$Theoretical<-c(0.174,0.099,0.101,0.184,0.141,0.042,0.104,0.155,0)
+genera_abun_matrix<-as.matrix(genera_abun)
+braymatrix<-t(genera_abun_matrix)
+braymatrix<-vegdist(braymatrix)
+braymatrix<-as.matrix(braymatrix)
+melted_braymatrix <- melt(braymatrix)
+melted_braymatrix$Var1<-factor(melted_braymatrix$Var1,levels=c("Theoretical","DNA 1","DNA 2","Mock 1","Mock 2","Mock 3"))
+melted_braymatrix$Var2<-factor(melted_braymatrix$Var2,levels=c("Theoretical","DNA 1","DNA 2","Mock 1","Mock 2","Mock 3"))
+
+heatmap_pos_controls_BC<-ggplot(melted_braymatrix)+
+  aes(x=Var1, y=Var2, fill=value) + 
+  scale_fill_gradient2(low ="dodgerblue4", high = "slategray4",midpoint=0.1,limit = c(0,0.25), space = "Lab",name="Bray-Curtis")+
+  xlab("Sample")+ 
+  ylab("")+ 
+  geom_tile()+
+  theme(axis.text.x = element_text(angle = 45, vjust = 1,size = 9, hjust = 1))+
+  theme(text = element_text(size=14))+
+  theme(legend.key.size = unit(1,"line"))
+
+combined_pos_controls<-ggarrange(pos_controls,heatmap_pos_controls_BC,labels = c("A", "B"),ncol = 2, nrow = 1)
+ggsave(file="H:/MyDocs/ReCHHI/Figures/FigS1_Positive_controls_combined.svg",plot=combined_pos_controls, width=12,height=6)
+```
+
+##Negative controls. Check total read count (compositional plot of it) and relative abundance plots. 2 negative controls have no reads, while the other one has only 5 reads. So negative controls seem to work well here.
+```{r}
+neg_controls_rechhi<-subset_samples(rechhi_phyloseq,Group=="Negative_Control")
+apply(neg_controls_rechhi@otu_table@.Data,2,sum)
+```
