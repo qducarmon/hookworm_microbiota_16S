@@ -1,7 +1,7 @@
 # Hookworm infection and gut microbiota
 
-This study profiled the gut microbiota using 16S rRNA gene amplicon sequencing of 20 volunteers who were voluntarily infected with Necator americanus larvae and followed over time at five time points.
-A link to the paper will be inserted here
+This study profiled the gut microbiota using 16S rRNA gene amplicon sequencing of 20 volunteers who were voluntarily infected with Necator americanus larvae and followed over time at five time points. Here you can find all analytical code and processed files necessary to reproduce results and figures from the paper.
+The paper has been pubilished [here](https://www.tandfonline.com/doi/full/10.1080/19490976.2020.1840764).
 In case you'd prefer to start analyzing from the raw sequence data yourself, you can find all raw sequence data under PRJEB36316.
 
 ## Requirements
